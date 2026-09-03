@@ -20,7 +20,7 @@ router = APIRouter(prefix="/inspections", tags=["inspections"])
 async def get_db():
     """Get database session."""
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
     await engine.dispose()
@@ -39,7 +39,7 @@ async def create_inspection(
     import uuid
 
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     inspection_id = str(uuid.uuid4())
 
@@ -90,7 +90,7 @@ async def get_inspection(
     GET /inspections/{id} — inspector+ (owner/region) role required.
     """
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
         result = await session.execute(
@@ -136,7 +136,7 @@ async def list_inspections(
     GET /inspections — inspector+ (own/region), admin (all).
     """
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     conditions = []
     params = {}

@@ -33,13 +33,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 
 
-async def get_db_session() -> AsyncSession:
+async def get_db_session():
     """Get a database session. In production, use dependency injection."""
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with async_session() as session:
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with session_factory() as session:
         yield session
     await engine.dispose()
 
@@ -57,9 +57,9 @@ async def login(request: Request, body: LoginRequest) -> TokenResponse:
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
     engine = create_async_engine(cfg.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    async with async_session() as session:
+    async with session_factory() as session:
         result = await session.execute(
             text("SELECT id, email, password_hash, full_name, role FROM users WHERE email = :email AND is_active = true"),
             {"email": body.email},
@@ -119,9 +119,9 @@ async def refresh_token(body: RefreshRequest) -> AccessTokenResponse:
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
     engine = create_async_engine(cfg.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    async with async_session() as session:
+    async with session_factory() as session:
         result = await session.execute(
             text("SELECT id, email, role FROM users WHERE id = :id AND is_active = true"),
             {"id": user_id},

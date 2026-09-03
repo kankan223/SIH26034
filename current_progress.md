@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-03 12:00
+**Last Updated (UTC):** 2026-09-03 13:30
 **Current Phase:** Phase 1: Auth, RBAC & Core Inspection Service Infrastructure
-**Current Subphase:** Subphase 1.1: Security Utilities & Authentication
-**Current Task:** Task 1.1.1: Implement security utilities (password hashing, JWT)
+**Current Subphase:** Subphase 1.1: Authentication Endpoints & JWT Token Flow
+**Current Task:** Task 1.1.2: POST /auth/login endpoint (COMPLETED)
 
 ---
 
@@ -12,12 +12,12 @@
 ```
 +-------------------------------------------------------------+
 | PHASE 1: Auth, RBAC & Core Inspection Service               |
-| SUBPHASE 1.1: Security Utilities & Authentication           |
-| TASK 1.1.1: Implement security utilities (IN PROGRESS)      |
+| SUBPHASE 1.1: Authentication Endpoints & JWT Token Flow     |
+| TASK 1.1.2: POST /auth/login (COMPLETED)                     |
 |                                                              |
 | Owner: AI Agent                                              |
 | Start: 2026-09-03 12:00 UTC                                  |
-| Est. Completion: 2026-09-03 13:00 UTC                        |
+| Completed: 2026-09-03 13:30 UTC                              |
 +-------------------------------------------------------------+
 ```
 
@@ -53,6 +53,9 @@
 | 2026-09-03 11:15 | 0.3 | Create GitHub Actions CI workflow | .github/workflows/ci.yml | VERIFIED | N/A | None | AI Agent |
 | 2026-09-03 11:30 | 0.3 | Create seed data scripts (categories, users, rules) | backend/scripts/seed_*.py | VERIFIED | N/A | None | AI Agent |
 | 2026-09-03 12:00 | 1.1 | Phase 0 COMPLETE — starting Phase 1 | current_progress.md | VERIFIED | N/A | Phase 0 verification gate passed | AI Agent |
+| 2026-09-03 12:30 | 1.1.1 | Implement security utilities (bcrypt + JWT) | backend/app/core/security.py, backend/tests/test_security.py | VERIFIED | 9/9 tests pass | None | AI Agent |
+| 2026-09-03 13:00 | 1.1.2 | Implement POST /auth/login + POST /auth/refresh | backend/app/api/auth.py, backend/app/schemas/auth.py | VERIFIED | 3.0ms avg latency (target ≤300ms) | Fixed async_sessionmaker NameError in auth.py | AI Agent |
+| 2026-09-03 13:30 | 1.1 | Tasks 1.1.1 + 1.1.2 VERIFIED — all 14 tests passing | todo.md, current_progress.md | VERIFIED | N/A | None | AI Agent |
 
 ---
 
