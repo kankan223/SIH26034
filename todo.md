@@ -1072,27 +1072,27 @@ Build the product category classifier using TF-IDF + GradientBoosting per prd.md
 - tech-stack.md §7 (scikit-learn, joblib)
 
 **Processing:**
-- [ ] Create `backend/app/services/classification.py` with:
+- [x] Create `backend/app/services/classification.py` with:
   - `classify_product(product_name, extracted_text) -> ClassificationResult` function
   - TF-IDF vectorizer + GradientBoosting classifier
   - Training data: seeded product names from prd.md §13.1 categories
   - Confidence threshold ≥0.6 per prd.md §10.4
   - Below threshold → route to manual category selection (15-entry dropdown per §13.1)
-- [ ] Save trained model as `.joblib` artifact per tech-stack.md §7
-- [ ] Load model once at worker startup
+- [x] Save trained model as `.joblib` artifact per tech-stack.md §7
+- [x] Load model once at worker startup
 
 **Output:**
-- `backend/app/services/classification.py` (~80 lines)
-- `ml/models/product_classifier.joblib` (trained model artifact)
-- Unit test: `backend/tests/test_classification.py`
+- `backend/app/services/classification.py` (~350 lines) — **CREATED**
+- `ml/models/product_classifier.joblib` (trained model artifact) — **CREATED**
+- Unit test: `backend/tests/test_classification.py` (~400 lines) — **CREATED**
 
 **Verification Tasks:**
-1. Classify "Britannia Good Day Biscuits" → category="Food & Beverage > Packaged Food"
-2. Classify "Colgate Toothpaste" → category="Personal Care & Cosmetics > Toiletries"
-3. Classify ambiguous text → confidence <0.6, routes to manual selection
-4. Classification completes in <50ms per prd.md §10.2
+1. [x] Classify "Britannia Good Day Biscuits" → category="Food & Beverage > Packaged Food" — **PASS**
+2. [x] Classify "Colgate Toothpaste" → category="Personal Care & Cosmetics > Toiletries" — **PASS**
+3. [x] Classify ambiguous text → confidence <0.6, routes to manual selection — **PASS**
+4. [x] Classification completes in <50ms per prd.md §10.2 — **PASS** (inference <50ms)
 
-**Regression Check:** Phase 3 tests still pass
+**Regression Check:** All 298 tests pass (265 Phase 1-3.3 + 33 classification)
 
 **Git Instructions:**
 ```bash
