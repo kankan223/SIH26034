@@ -36,11 +36,11 @@ async def log_action(
         reason: Reason for the action (required for corrections per Workflow D)
     """
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     log_id = str(uuid.uuid4())
 
-    async with async_session() as session:
+    async with session_factory() as session:
         await session.execute(
             text("""INSERT INTO audit_logs (id, actor_id, action, entity_type, entity_id,
                      before_value, after_value, reason)

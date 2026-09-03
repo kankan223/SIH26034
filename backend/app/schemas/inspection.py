@@ -1,7 +1,7 @@
 """Pydantic schemas for inspection endpoints."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -36,3 +36,13 @@ class InspectionListResponse(BaseModel):
     total: int
     page: int = 1
     page_size: int = 20
+
+
+class ImageResponse(BaseModel):
+    """Image upload response body."""
+    id: str
+    inspection_id: str
+    storage_url: str
+    content_hash: str
+    quality_score: Optional[float] = None
+    quality_issues: Optional[dict[str, Any]] = None

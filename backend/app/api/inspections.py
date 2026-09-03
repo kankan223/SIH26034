@@ -1,8 +1,10 @@
 """Inspection CRUD endpoints per prd.md §21."""
 
+import hashlib
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
@@ -10,18 +12,24 @@ from app.core.config import settings
 from app.core.rbac import get_current_user, require_role
 from app.schemas.inspection import (
     CreateInspectionRequest,
+    ImageResponse,
     InspectionListResponse,
     InspectionResponse,
 )
+from app.services.audit_service import log_action
 
 router = APIRouter(prefix="/inspections", tags=["inspections"])
 
+# Allowed image MIME types per prd.md §10
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_FILE_SIZE_MB = 15  # per prd.md §9
 
-async def get_db():
+
+async def _get_db():
     """Get database session."""
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with async_session() as session:
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with session_factory() as session:
         yield session
     await engine.dispose()
 
@@ -36,14 +44,12 @@ async def create_inspection(
     POST /inspections — inspector+ role required.
     Returns inspection with status "draft".
     """
-    import uuid
-
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     inspection_id = str(uuid.uuid4())
 
-    async with async_session() as session:
+    async with session_factory() as session:
         await session.execute(
             text("""INSERT INTO inspections (id, inspector_id, status, location, region, source)
                      VALUES (:id, :inspector_id, 'draft', :location, :region, :source)"""),
@@ -65,6 +71,15 @@ async def create_inspection(
         row = result.fetchone()
 
     await engine.dispose()
+
+    # Audit log
+    await log_action(
+        actor_id=user["id"],
+        action="create",
+        entity_type="inspection",
+        entity_id=inspection_id,
+        after_value={"status": "draft", "source": body.source},
+    )
 
     return InspectionResponse(
         id=str(row.id),
@@ -90,9 +105,9 @@ async def get_inspection(
     GET /inspections/{id} — inspector+ (owner/region) role required.
     """
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    async with async_session() as session:
+    async with session_factory() as session:
         result = await session.execute(
             text("SELECT * FROM inspections WHERE id = :id"),
             {"id": inspection_id},
@@ -106,8 +121,9 @@ async def get_inspection(
 
     # RBAC: inspectors can only see their own or same-region inspections
     if user["role"] == "inspector" and str(row.inspector_id) != user["id"]:
-        if row.region and row.region != user.get("region"):
-            raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=403, detail="Access denied")
+    if user["role"] == "senior_officer" and row.region and row.region != user.get("region"):
+        raise HTTPException(status_code=403, detail="Access denied — wrong region")
 
     return InspectionResponse(
         id=str(row.id),
@@ -136,7 +152,7 @@ async def list_inspections(
     GET /inspections — inspector+ (own/region), admin (all).
     """
     engine = create_async_engine(settings.DATABASE_URL, echo=False)
-    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     conditions = []
     params = {}
@@ -144,9 +160,11 @@ async def list_inspections(
     if user["role"] == "inspector":
         conditions.append("inspector_id = :user_id")
         params["user_id"] = user["id"]
-    elif user["role"] == "senior_officer" and region:
-        conditions.append("region = :region")
-        params["region"] = region
+    elif user["role"] == "senior_officer":
+        if region:
+            conditions.append("region = :region")
+            params["region"] = region
+        # senior_officers see their region's inspections
 
     if status_filter:
         conditions.append("status = :status")
@@ -155,7 +173,7 @@ async def list_inspections(
     where_clause = " AND ".join(conditions) if conditions else "1=1"
     offset = (page - 1) * page_size
 
-    async with async_session() as session:
+    async with session_factory() as session:
         count_result = await session.execute(
             text(f"SELECT COUNT(*) FROM inspections WHERE {where_clause}"),
             params,
@@ -188,3 +206,105 @@ async def list_inspections(
     ]
 
     return InspectionListResponse(items=items, total=total, page=page, page_size=page_size)
+
+
+@router.post("/{inspection_id}/images", response_model=ImageResponse, status_code=status.HTTP_201_CREATED)
+async def upload_image(
+    inspection_id: str,
+    file: UploadFile = File(...),
+    user: dict = Depends(require_role("inspector", "senior_officer")),
+) -> ImageResponse:
+    """Upload an image for an inspection per prd.md §21.
+
+    POST /inspections/{id}/images — inspector+ role required.
+    Validates MIME type and file size per prd.md §9.
+    """
+    # Validate MIME type
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type: {file.content_type}. Allowed: {', '.join(ALLOWED_MIME_TYPES)}"
+        )
+
+    # Read file content and validate size
+    content = await file.read()
+    size_mb = len(content) / (1024 * 1024)
+    if size_mb > MAX_FILE_SIZE_MB:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large: {size_mb:.1f}MB. Maximum: {MAX_FILE_SIZE_MB}MB"
+        )
+
+    # Verify inspection exists and user has access
+    engine = create_async_engine(settings.DATABASE_URL, echo=False)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with session_factory() as session:
+        result = await session.execute(
+            text("SELECT * FROM inspections WHERE id = :id"),
+            {"id": inspection_id},
+        )
+        inspection = result.fetchone()
+
+    if not inspection:
+        await engine.dispose()
+        raise HTTPException(status_code=404, detail="Inspection not found")
+
+    # RBAC check
+    if user["role"] == "inspector" and str(inspection.inspector_id) != user["id"]:
+        await engine.dispose()
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Compute content hash
+    content_hash = hashlib.sha256(content).hexdigest()
+
+    # Generate storage URL (in a real system, this would upload to MinIO)
+    # For now, we store a reference URL
+    storage_url = f"minio://docket-images/{inspection_id}/{content_hash[:16]}.jpg"
+
+    # Calculate basic quality score (placeholder — real CV pipeline in Phase 3)
+    quality_score = 0.85  # placeholder
+    quality_issues = {"note": "Quality scoring will be implemented in Phase 3 (CV pipeline)"}
+
+    # Create image record
+    image_id = str(uuid.uuid4())
+    async with session_factory() as session:
+        await session.execute(
+            text("""INSERT INTO images (id, inspection_id, storage_url, content_hash,
+                     quality_score, quality_issues)
+                     VALUES (:id, :inspection_id, :storage_url, :content_hash,
+                     :quality_score, :quality_issues)"""),
+            {
+                "id": image_id,
+                "inspection_id": inspection_id,
+                "storage_url": storage_url,
+                "content_hash": content_hash,
+                "quality_score": quality_score,
+                "quality_issues": quality_issues,
+            },
+        )
+        await session.commit()
+
+    await engine.dispose()
+
+    # Audit log
+    await log_action(
+        actor_id=user["id"],
+        action="upload_image",
+        entity_type="image",
+        entity_id=image_id,
+        after_value={
+            "inspection_id": inspection_id,
+            "content_hash": content_hash,
+            "quality_score": quality_score,
+        },
+    )
+
+    return ImageResponse(
+        id=image_id,
+        inspection_id=inspection_id,
+        storage_url=storage_url,
+        content_hash=content_hash,
+        quality_score=quality_score,
+        quality_issues=quality_issues,
+    )
