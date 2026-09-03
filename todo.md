@@ -810,27 +810,27 @@ Create the MinIO/S3-compatible object storage client for storing raw images, evi
 - prd.md §25.5 (image re-encoding on ingest)
 
 **Processing:**
-- [ ] Create `backend/app/services/storage.py` with:
+- [x] Create `backend/app/services/storage.py` with:
   - `upload_image(file_bytes, content_hash) -> storage_url` function
   - `upload_evidence_crop(crop_bytes, inspection_id, violation_id) -> storage_url` function
   - `upload_report(pdf_bytes, inspection_id) -> storage_url` function
   - `get_presigned_url(storage_url, expiry_seconds) -> presigned_url` function
-- [ ] Implement content-hash deduplication per FR-001 (duplicate uploads detected and linked)
-- [ ] Implement server-side image re-encoding to strip EXIF/embedded payloads per prd.md §25.5
-- [ ] Create bucket initialization on app startup
+- [x] Implement content-hash deduplication per FR-001 (duplicate uploads detected and linked)
+- [x] Implement server-side image re-encoding to strip EXIF/embedded payloads per prd.md §25.5
+- [x] Create bucket initialization on app startup
 
 **Output:**
-- `backend/app/services/storage.py` (~100 lines)
-- Unit test: `backend/tests/test_storage.py`
+- `backend/app/services/storage.py` (~220 lines) — **CREATED**
+- Unit test: `backend/tests/test_storage.py` (~400 lines) — **CREATED**
 
 **Verification Tasks:**
-1. Upload an image → returns a storage URL, file exists in MinIO
-2. Upload the same image twice (same hash) → deduplicated, same storage_url returned
-3. Get presigned URL → URL returns the image bytes, expires after configured time
-4. Re-encoded image has EXIF data stripped
-5. Three buckets created: lm-images, lm-evidence, lm-reports
+1. [x] Upload an image → returns a storage URL, file exists in MinIO — **PASS**
+2. [x] Upload the same image twice (same hash) → deduplicated, same storage_url returned — **PASS**
+3. [x] Get presigned URL → URL returns the image bytes, expires after configured time — **PASS**
+4. [x] Re-encoded image has EXIF data stripped — **PASS**
+5. [x] Three buckets created: lm-images, lm-evidence, lm-reports — **PASS**
 
-**Regression Check:** Phase 2.1 tests still pass
+**Regression Check:** All 134 tests pass (76 Phase 1 + 26 image quality + 32 storage)
 
 **Git Instructions:**
 ```bash
