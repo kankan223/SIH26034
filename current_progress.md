@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-03 15:45
+**Last Updated (UTC):** 2026-09-03 16:15
 **Current Phase:** Phase 3: CV & OCR Pipeline
-**Current Subphase:** Subphase 3.1: YOLO Detection Service
-**Current Task:** Task 3.1.1: Package and label detection using YOLOv8 (NEXT)
+**Current Subphase:** Subphase 3.2: PaddleOCR Integration
+**Current Task:** Task 3.2.1: PaddleOCR service (NEXT)
 
 ---
 
@@ -11,13 +11,13 @@
 
 ```
 +---------------------------------------------------------------+
-| PHASE 2: COMPLETE (134/134 tests passing)                     |
 | PHASE 3: CV & OCR Pipeline                                     |
-| SUBPHASE 3.1: YOLO Detection Service                           |
-| TASK 3.1.1: YOLOv8 package/label detection (NEXT)              |
+| SUBPHASE 3.1: YOLO Detection Service (COMPLETE)                |
+| SUBPHASE 3.2: PaddleOCR Integration                            |
+| TASK 3.2.1: PaddleOCR service (NEXT)                           |
 |                                                                |
 | Owner: AI Agent                                                |
-| Start: 2026-09-03 15:45 UTC                                    |
+| Start: 2026-09-03 16:15 UTC                                    |
 +---------------------------------------------------------------+
 ```
 
@@ -63,6 +63,7 @@
 | 2026-09-03 15:00 | PHASE 1 | Phase 1 verification gate PASSED — all 76 tests passing | todo.md, current_progress.md | VERIFIED | 6.27s full suite runtime | None | AI Agent |
 | 2026-09-03 15:15 | 2.1.1 | Image quality gate: blur/exposure/resolution checks + 26 tests | backend/app/services/image_processing.py, backend/tests/test_image_processing.py, backend/app/api/inspections.py, backend/requirements.txt | VERIFIED | 102/102 tests passing, all quality checks <500ms | Added opencv-python-headless to requirements.txt | AI Agent |
 | 2026-09-03 15:45 | 2.1.2 | MinIO storage client: upload, dedup, EXIF stripping, presigned URLs + 32 tests | backend/app/services/storage.py, backend/tests/test_storage.py | VERIFIED | 134/134 tests passing, all 3 buckets, dedup works | Uses mocked S3 client for tests (no live MinIO) | AI Agent |
+| 2026-09-03 16:15 | 3.1.1 | YOLOv8n package/label detection with NMS, contour fallback + 40 tests | backend/app/services/cv_detection.py, backend/tests/test_cv_detection.py | VERIFIED | 174/174 tests passing, all detections <300ms | Contour fallback when YOLO model unavailable | AI Agent |
 
 ---
 
