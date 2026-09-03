@@ -4,9 +4,7 @@ import uuid
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 DEMO_USERS = [
     {
@@ -44,7 +42,7 @@ async def seed_users(session: AsyncSession) -> int:
     inserted = 0
     for user in DEMO_USERS:
         user_id = str(uuid.uuid4())
-        password_hash = pwd_context.hash(user["password"])
+        password_hash = bcrypt.hashpw(user["password"].encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
         await session.execute(
             text("""INSERT INTO users (id, email, password_hash, full_name, role, region, is_active)
                      VALUES (:id, :email, :password_hash, :full_name, :role, :region, true)"""),

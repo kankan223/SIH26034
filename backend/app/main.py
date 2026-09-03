@@ -2,8 +2,14 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.core.config import settings
+
+# Rate limiter — per prd.md §25.1
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Docket — Legal Metrology Compliance API",
@@ -12,6 +18,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware
 origins = [origin.strip() for origin in settings.CORS_ALLOWED_ORIGINS.split(",")]
@@ -22,6 +31,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include auth router
+from app.api.auth import router as auth_router
+app.include_router(auth_router, prefix="/api/v1")
 
 
 @app.get("/health")
