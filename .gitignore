@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+
+# Environment / Secrets
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Docker
+docker-compose.override.yml
+
+# ML / CV artifacts (large files)
+*.onnx
+*.joblib
+*.pt
+*.pth
+*.weights
+ml/models/*.onnx
+ml/models/*.joblib
+
+# Test / Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage/
+junit/
+pytest.xml
+
+# Alembic
+backend/alembic/versions/__pycache__/
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Uploads (local dev)
+uploads/

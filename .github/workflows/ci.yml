@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint with ruff
+        run: cd backend && ruff check app/ tests/
+
+      - name: Type check with mypy
+        run: cd backend && mypy app/core/ --ignore-missing-imports
+        continue-on-error: true
+
+      - name: Run tests
+        run: cd backend && python -m pytest tests/ -v --tb=short
+
+      - name: Dependency audit
+        run: cd backend && pip-audit
+        continue-on-error: true
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Type check
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Build
+        run: cd frontend && npm run build
+
+      - name: Dependency audit
+        run: cd frontend && npm audit
+        continue-on-error: true
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for secrets in staged files
+        run: |
+          if git diff --cached --diff-filter=ACM | grep -E "JWT_SECRET|POSTGRES_PASSWORD|MINIO_ROOT|api\.key|sk_"; then
+            echo "ERROR: Secrets detected in commit"
+            exit 1
+          fi
