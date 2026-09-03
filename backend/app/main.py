@@ -7,6 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.core.config import settings
+from app.middleware.audit import AuditMiddleware
 
 # Rate limiter — per prd.md §25.1
 limiter = Limiter(key_func=get_remote_address)
@@ -32,11 +33,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Audit middleware — logs mutating HTTP operations per prd.md §20.1
+app.add_middleware(AuditMiddleware)
+
 # Include routers
 from app.api.auth import router as auth_router
 from app.api.inspections import router as inspections_router
+from app.api.audit import router as audit_router
+
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(inspections_router, prefix="/api/v1")
+app.include_router(audit_router, prefix="/api/v1")
 
 
 @app.get("/health")
