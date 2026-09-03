@@ -1,24 +1,24 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-03 14:30
+**Last Updated (UTC):** 2026-09-03 14:45
 **Current Phase:** Phase 1: Auth, RBAC & Core Inspection Service Infrastructure
 **Current Subphase:** Subphase 1.3: Inspection CRUD & Audit Logging
-**Current Task:** Task 1.3.2: Implement audit logging service (COMPLETED)
+**Current Task:** Task 1.3.2: Audit middleware + API + tests (COMPLETED)
 
 ---
 
 ## Active Status Banner
 
 ```
-+-------------------------------------------------------------+
-| PHASE 1: Auth, RBAC & Core Inspection Service               |
-| SUBPHASE 1.3: Inspection CRUD & Audit Logging                |
-| TASK 1.3.2: Audit logging service (COMPLETED)                |
-|                                                              |
-| Owner: AI Agent                                              |
-| Start: 2026-09-03 14:15 UTC                                  |
-| Completed: 2026-09-03 14:30 UTC                              |
-+-------------------------------------------------------------+
++---------------------------------------------------------------+
+| PHASE 1: Auth, RBAC & Core Inspection Service                 |
+| SUBPHASE 1.3: Inspection CRUD & Audit Logging                  |
+| TASK 1.3.2: Audit middleware + API + 42 tests (COMPLETED)       |
+|                                                                |
+| Owner: AI Agent                                                |
+| Start: 2026-09-03 14:15 UTC                                    |
+| Completed: 2026-09-03 14:45 UTC                                |
++---------------------------------------------------------------+
 ```
 
 ---
@@ -59,6 +59,7 @@
 | 2026-09-03 14:00 | 1.2.1 | Implement RBAC: get_current_user + require_role dependencies | backend/app/core/rbac.py, backend/app/core/constants.py, backend/tests/test_rbac.py | VERIFIED | 34/34 tests pass (25 RBAC + 9 security) | None | AI Agent |
 | 2026-09-03 14:15 | 1.3.1 | Inspection CRUD endpoints with image upload, audit logging | backend/app/api/inspections.py, backend/app/services/inspection_service.py, backend/app/schemas/inspection.py, backend/app/services/audit_service.py | VERIFIED | MIME validation, RBAC enforcement, pagination working | Fixed async_sessionmaker import in audit_service | AI Agent |
 | 2026-09-03 14:30 | 1.3.2 | Audit logging service (append-only, integrated into all CRUD) | backend/app/services/audit_service.py | VERIFIED | log_action() writes to audit_logs for every state change | DB grants deferred to Phase 9 | AI Agent |
+| 2026-09-03 14:45 | 1.3.2 | Audit middleware + GET /audit-logs API + 42 comprehensive tests | backend/app/middleware/audit.py, backend/app/api/audit.py, backend/tests/test_audit.py, backend/app/schemas/audit.py | VERIFIED | 76/76 tests passing, RBAC enforced, sensitive data filtering works | None | AI Agent |
 
 ---
 
