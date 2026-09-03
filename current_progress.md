@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-03 13:30
+**Last Updated (UTC):** 2026-09-03 14:15
 **Current Phase:** Phase 1: Auth, RBAC & Core Inspection Service Infrastructure
-**Current Subphase:** Subphase 1.1: Authentication Endpoints & JWT Token Flow
-**Current Task:** Task 1.1.2: POST /auth/login endpoint (COMPLETED)
+**Current Subphase:** Subphase 1.2: RBAC Middleware & Role-Gated Routes
+**Current Task:** Task 1.2.1: Implement FastAPI RBAC dependency (COMPLETED)
 
 ---
 
@@ -12,12 +12,12 @@
 ```
 +-------------------------------------------------------------+
 | PHASE 1: Auth, RBAC & Core Inspection Service               |
-| SUBPHASE 1.1: Authentication Endpoints & JWT Token Flow     |
-| TASK 1.1.2: POST /auth/login (COMPLETED)                     |
+| SUBPHASE 1.2: RBAC Middleware & Role-Gated Routes            |
+| TASK 1.2.1: RBAC dependency (COMPLETED)                      |
 |                                                              |
 | Owner: AI Agent                                              |
-| Start: 2026-09-03 12:00 UTC                                  |
-| Completed: 2026-09-03 13:30 UTC                              |
+| Start: 2026-09-03 14:00 UTC                                  |
+| Completed: 2026-09-03 14:15 UTC                              |
 +-------------------------------------------------------------+
 ```
 
@@ -56,6 +56,7 @@
 | 2026-09-03 12:30 | 1.1.1 | Implement security utilities (bcrypt + JWT) | backend/app/core/security.py, backend/tests/test_security.py | VERIFIED | 9/9 tests pass | None | AI Agent |
 | 2026-09-03 13:00 | 1.1.2 | Implement POST /auth/login + POST /auth/refresh | backend/app/api/auth.py, backend/app/schemas/auth.py | VERIFIED | 3.0ms avg latency (target ≤300ms) | Fixed async_sessionmaker NameError in auth.py | AI Agent |
 | 2026-09-03 13:30 | 1.1 | Tasks 1.1.1 + 1.1.2 VERIFIED — all 14 tests passing | todo.md, current_progress.md | VERIFIED | N/A | None | AI Agent |
+| 2026-09-03 14:00 | 1.2.1 | Implement RBAC: get_current_user + require_role dependencies | backend/app/core/rbac.py, backend/app/core/constants.py, backend/tests/test_rbac.py | VERIFIED | 34/34 tests pass (25 RBAC + 9 security) | None | AI Agent |
 
 ---
 
@@ -104,10 +105,10 @@ Initial commit: Phase 0 scaffolding
 2. Implement `backend/app/api/auth.py` — POST /auth/login + POST /auth/refresh endpoints
 3. Create `backend/app/schemas/auth.py` — Pydantic request/response models
 
-### Subphase 1.2: RBAC Middleware
-1. Implement `backend/app/core/rbac.py` — FastAPI dependencies for role-based access
-2. Create `backend/app/core/constants.py` — shared enums
+### Subphase 1.2: RBAC Middleware ✓
+1. Implement `backend/app/core/rbac.py` — FastAPI dependencies for role-based access ✓
+2. Create `backend/app/core/constants.py` — shared enums ✓
 
-### Subphase 1.3: Inspection CRUD & Audit Logging
-1. Implement inspection CRUD endpoints
-2. Implement audit logging service (append-only)
+### Subphase 1.3: Inspection CRUD & Audit Logging (NEXT)
+1. Implement inspection CRUD endpoints — Task 1.3.1
+2. Implement audit logging service (append-only) — Task 1.3.2

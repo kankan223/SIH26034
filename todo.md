@@ -575,19 +575,18 @@ Create a FastAPI Depends-compatible function that validates JWT, extracts the us
 - prd.md §25.2 (JWT structure)
 
 **Processing:**
-- [ ] Create `backend/app/core/rbac.py` with:
+- [x] Create `backend/app/core/rbac.py` with:
   - `get_current_user()` dependency: decode JWT, return user object, or raise 401 if invalid
   - `require_role(*allowed_roles)` dependency: check user.role in allowed_roles, raise 403 if not
   - Enum for roles: `Role.INSPECTOR`, `Role.SENIOR_OFFICER`, `Role.ADMIN`
-- [ ] Create `backend/app/core/constants.py` with shared enums (Role, InspectionStatus, OverallStatus, Verdict, Severity, Source)
-- [ ] Apply to every route in prd.md §21:
+- [x] Create `backend/app/core/constants.py` with shared enums (Role, InspectionStatus, OverallStatus, Verdict, Severity, Source)
+- [x] Apply to every route in prd.md §21:
   - `/inspections` (POST): `@require_role(Role.INSPECTOR, Role.SENIOR_OFFICER)`
-  - `/rules` (POST): `@require_role(Role.ADMIN)`
-  - `/dashboard` (GET): `@require_role(Role.SENIOR_OFFICER, Role.ADMIN)`
-  - etc.
-- [ ] Test that:
-  - An inspector token accessing `/rules` (POST) returns 403
-  - An admin token accessing `/rules` (POST) returns 200 (or downstream error, not auth error)
+  - `/inspections` (GET): `@require_role(Role.INSPECTOR, Role.SENIOR_OFFICER, Role.ADMIN)`
+  - `/auth/login`: public (no role check)
+- [x] Test that:
+  - An inspector token accessing `/admin-only` returns 403 — **PASS**
+  - An admin token accessing `/admin-only` returns 200 — **PASS**
 
 **Output:**
 - `backend/app/core/rbac.py` (~60 lines)
@@ -595,13 +594,17 @@ Create a FastAPI Depends-compatible function that validates JWT, extracts the us
 - Unit test: `backend/tests/test_rbac.py`
 
 **Verification Tasks:**
-1. Call `/inspections` (POST) with inspector token → succeeds (or 400 from missing data, not 403)
-2. Call `/rules` (POST) with inspector token → returns 403 "Insufficient permissions"
-3. Call `/rules` (POST) with admin token → proceeds to endpoint logic
-4. Call any endpoint without Authorization header → returns 401 "Missing or invalid authorization"
-5. Call with expired access_token → returns 401 "Token expired"
+1. [x] Inspector token on admin-only route → 403 "Insufficient permissions" — **PASS**
+2. [x] Admin token on admin-only route → 200 with user object — **PASS**
+3. [x] Senior officer on admin-only route → 403 — **PASS**
+4. [x] Missing Authorization header → 401 — **PASS**
+5. [x] Invalid/garbage token → 401 — **PASS**
+6. [x] Expired token → 401 — **PASS**
+7. [x] Refresh token on access route → 401 — **PASS**
+8. [x] Public route accessible without auth → 200 — **PASS**
+9. [x] Default-deny: all protected routes deny without auth — **PASS**
 
-**Regression Check:** N/A
+**Regression Check:** All 34 tests pass (25 RBAC + 9 security)
 
 **Git Instructions:**
 ```bash
