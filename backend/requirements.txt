@@ -24,6 +24,7 @@ structlog==24.*
 
 # Image / CV / OCR / ML
 pillow==10.*
+opencv-python-headless==4.10.*
 python-dateutil==2.9.*
 
 # Object storage

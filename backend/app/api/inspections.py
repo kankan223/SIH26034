@@ -17,6 +17,7 @@ from app.schemas.inspection import (
     InspectionResponse,
 )
 from app.services.audit_service import log_action
+from app.services.image_processing import assess_quality
 
 router = APIRouter(prefix="/inspections", tags=["inspections"])
 
@@ -262,9 +263,15 @@ async def upload_image(
     # For now, we store a reference URL
     storage_url = f"minio://docket-images/{inspection_id}/{content_hash[:16]}.jpg"
 
-    # Calculate basic quality score (placeholder — real CV pipeline in Phase 3)
-    quality_score = 0.85  # placeholder
-    quality_issues = {"note": "Quality scoring will be implemented in Phase 3 (CV pipeline)"}
+    # Run image quality assessment per prd.md §10.1 and FR-003
+    try:
+        quality_result = assess_quality(content)
+        quality_score = quality_result.quality_score
+        quality_issues = quality_result.quality_issues
+    except Exception as e:
+        # If quality assessment fails (e.g., corrupted image), flag but don't reject
+        quality_score = 0.0
+        quality_issues = [f"quality_assessment_failed: {str(e)}"]
 
     # Create image record
     image_id = str(uuid.uuid4())
