@@ -992,7 +992,7 @@ Build the text normalization layer (fix common OCR substitutions, normalize unit
 - prd.md FR-008 (declaration extraction)
 
 **Processing:**
-- [ ] Create `backend/app/services/extraction.py` with:
+- [x] Create `backend/app/services/extraction.py` with:
   - `normalize_text(ocr_results) -> list[NormalizedToken]` function
   - Common OCR substitution dictionary (O/0, l/1, etc.)
   - Unit normalization: g/gm/gram → `g`, ml/mL → `ml`, etc. (closed vocabulary per §14.1)
@@ -1002,22 +1002,22 @@ Build the text normalization layer (fix common OCR substitutions, normalize unit
   - Regex + positional classifiers per field type (MRP near ₹ token, date near MFG/PKD keywords)
   - Each field type in §14.1's data model must have at least one extraction rule
   - Fields not found are explicitly recorded as `NOT_FOUND`, never omitted
-- [ ] Handle multilingual: both English and Hindi candidates stored per §14.2
-- [ ] Handle ambiguity: multiple candidates for same field → both recorded with confidence scores
+- [x] Handle multilingual: both English and Hindi candidates stored per §14.2
+- [x] Handle ambiguity: multiple candidates for same field → both recorded with confidence scores
 
 **Output:**
-- `backend/app/services/extraction.py` (~200 lines)
-- Unit test: `backend/tests/test_extraction.py`
+- `backend/app/services/extraction.py` (~450 lines) — **CREATED**
+- Unit test: `backend/tests/test_extraction.py` (~550 lines) — **CREATED**
 
 **Verification Tasks:**
-1. "500gm" → normalized to value=500, unit="g"
-2. "Rs. 999" → normalized to currency="INR", value=999
-3. "08/2026" near "MFG" → extracted as mfg_date={month: 8, year: 2026}
-4. Missing field → declared as NOT_FOUND, not omitted
-5. Two MRP candidates → both returned with confidence scores
-6. Every field type in §14.1 has at least one extraction rule
+1. [x] "500gm" → normalized to value=500, unit="g" — **PASS**
+2. [x] "Rs. 999" → normalized to currency="INR", value=999 — **PASS**
+3. [x] "08/2026" near "MFG" → extracted as mfg_date={month: 8, year: 2026} — **PASS**
+4. [x] Missing field → declared as NOT_FOUND, not omitted — **PASS**
+5. [x] Two MRP candidates → both returned with confidence scores — **PASS**
+6. [x] Every field type in §14.1 has at least one extraction rule — **PASS**
 
-**Regression Check:** Phase 3.2 tests still pass
+**Regression Check:** All 265 tests pass (209 Phase 1-3.2 + 56 extraction)
 
 **Git Instructions:**
 ```bash

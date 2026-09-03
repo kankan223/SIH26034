@@ -1,6 +1,6 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-03 17:00
+**Last Updated (UTC):** 2026-09-03 17:15
 **Current Phase:** Phase 4: Declaration Extraction & Product Classification
 **Current Subphase:** Subphase 4.1: Product Classification
 **Current Task:** Task 4.1.1: Product category classifier (NEXT)
@@ -18,7 +18,7 @@
 | test_cv_detection.py | 40 | ✅ PASS |
 | test_ocr_service.py | 35 | ✅ PASS |
 | test_storage.py | 32 | ✅ PASS |
-| **Total** | **209** | **✅ ALL PASSING** |
+| **Total** | **265** | **✅ ALL PASSING** |
 
 ---
 
@@ -26,13 +26,13 @@
 
 ```
 +---------------------------------------------------------------+
-| PHASE 3: COMPLETE (209/209 tests passing)                      |
+| PHASE 3: COMPLETE (265/265 tests passing)                      |
 | PHASE 4: Declaration Extraction & Product Classification       |
 | SUBPHASE 4.1: Product Classification                           |
 | TASK 4.1.1: Product category classifier (NEXT)                 |
 |                                                                |
 | Owner: AI Agent                                                |
-| Start: 2026-09-03 16:45 UTC                                    |
+| Start: 2026-09-03 17:15 UTC                                    |
 +---------------------------------------------------------------+
 ```
 
@@ -80,6 +80,7 @@
 | 2026-09-03 15:45 | 2.1.2 | MinIO storage client: upload, dedup, EXIF stripping, presigned URLs + 32 tests | backend/app/services/storage.py, backend/tests/test_storage.py | VERIFIED | 134/134 tests passing, all 3 buckets, dedup works | Uses mocked S3 client for tests (no live MinIO) | AI Agent |
 | 2026-09-03 16:15 | 3.1.1 | YOLOv8n package/label detection with NMS, contour fallback + 40 tests | backend/app/services/cv_detection.py, backend/tests/test_cv_detection.py | VERIFIED | 174/174 tests passing, all detections <300ms | Contour fallback when YOLO model unavailable | AI Agent |
 | 2026-09-03 16:45 | 3.2.1 | PaddleOCR service: multilingual, angle classification, upscaling + 35 tests | backend/app/services/ocr_service.py, backend/tests/test_ocr_service.py | VERIFIED | 209/209 tests passing, all OCR <3s | OpenCV fallback when PaddleOCR unavailable | AI Agent |
+| 2026-09-03 17:15 | 3.3.1 | Text normalization + declaration extraction: OCR fixes, unit/currency/date normalization, field extraction + 56 tests | backend/app/services/extraction.py, backend/tests/test_extraction.py | VERIFIED | 265/265 tests passing, extraction <100ms | All 14 field types per §14.1 have extraction rules | AI Agent |
 
 ---
 
