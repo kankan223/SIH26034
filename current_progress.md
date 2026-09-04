@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-03 18:05
-**Current Phase:** Phase 4: Declaration Extraction & Product Classification
-**Current Subphase:** Subphase 4.2: Font Size & Layout Analysis (COMPLETE)
-**Current Task:** Task 4.3.1: Rule-engine selection (NEXT)
+**Last Updated (UTC):** 2026-09-03 18:20
+**Current Phase:** Phase 5: Rule Engine & Compliance Checking
+**Current Subphase:** Subphase 5.1: Rule Engine Core (COMPLETE)
+**Current Task:** Task 5.2.1: Rule CRUD API (NEXT)
 
 ---
 
@@ -20,7 +20,8 @@
 | test_storage.py | 32 | ✅ PASS |
 | test_classification.py | 33 | ✅ PASS |
 | test_font_analysis.py | 29 | ✅ PASS |
-| **Total** | **327** | **✅ ALL PASSING** |
+| test_rule_engine.py | 58 | ✅ PASS |
+| **Total** | **385** | **✅ ALL PASSING** |
 
 ---
 
@@ -28,13 +29,12 @@
 
 ```
 +---------------------------------------------------------------+
-| PHASE 4: Declaration Extraction & Product Classification       |
-| SUBPHASE 4.1: Product Classification (COMPLETE)                |
-| SUBPHASE 4.2: Font Size & Layout Analysis (COMPLETE)           |
-| TASK 4.2.1: Font size estimation (COMPLETE)                    |
+| PHASE 5: Rule Engine & Compliance Checking                     |
+| SUBPHASE 5.1: Rule Engine Core (COMPLETE)                      |
+| TASK 5.1.1: Rule engine evaluator (COMPLETE)                   |
 |                                                                |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-03 18:05 UTC                                |
+| Completed: 2026-09-03 18:20 UTC                                |
 +---------------------------------------------------------------+
 ```
 
@@ -85,6 +85,7 @@
 | 2026-09-03 17:15 | 3.3.1 | Text normalization + declaration extraction: OCR fixes, unit/currency/date normalization, field extraction + 56 tests | backend/app/services/extraction.py, backend/tests/test_extraction.py | VERIFIED | 265/265 tests passing, extraction <100ms | All 14 field types per §14.1 have extraction rules | AI Agent |
 | 2026-09-03 17:45 | 4.1.1 | Product category classifier: TF-IDF + GradientBoosting, 10 categories, model artifact + 33 tests | backend/app/services/classification.py, ml/models/product_classifier.joblib, backend/tests/test_classification.py | VERIFIED | 298/298 tests passing, inference <50ms | 90 seeded training samples, confidence threshold ≥0.6 | AI Agent |
 | 2026-09-03 18:05 | 4.2.1 | Font size estimation: relative-proxy method, confidence scoring, UNABLE_TO_VERIFY | backend/app/services/font_analysis.py, backend/tests/test_font_analysis.py | VERIFIED | 327/327 tests passing, <10ms per assessment | No fabricated mm values — honest uncertainty reporting | AI Agent |
+| 2026-09-03 18:20 | 5.1.1 | Rule engine evaluator: deterministic, data-driven, versioned, all validation types | backend/app/services/rule_engine.py, backend/tests/test_rule_engine.py | VERIFIED | 385/385 tests passing, evaluation <1ms | 3 validation types (regex_and_presence, presence_only, format_check), every verdict references rule_versions.id | AI Agent |
 
 ---
 
