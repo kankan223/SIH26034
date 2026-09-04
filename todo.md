@@ -1124,26 +1124,25 @@ Build the font-size estimation module using the relative-proxy method per prd.md
 - prd.md §15.7 (explicit limitations: unreliable without physical reference)
 - prd.md FR-019 (measurement_confidence field, UNABLE_TO_VERIFY state)
 
-**Processing:**
-- [ ] Create `backend/app/services/font_analysis.py` with:
+**Processing:**  - [x] Create `backend/app/services/font_analysis.py` with:
   - `estimate_font_size(ocr_bbox, package_bbox) -> FontSizeResult` function
   - Relative proxy: text_line_height / package_height as a fraction
   - Confidence scoring: high if clear text region, low if degraded
   - Below confidence floor → mark `UNABLE_TO_VERIFY`, never fabricate pass/fail
-- [ ] Output always includes `measurement_confidence` field
-- [ ] Low-confidence renders as "Unable to verify precisely" in UI/report per §15.7
+- [x] Output always includes `measurement_confidence` field
+- [x] Low-confidence renders as "Unable to verify precisely" in UI/report per §15.7
 
 **Output:**
-- `backend/app/services/font_analysis.py` (~80 lines)
-- Unit test: `backend/tests/test_font_analysis.py`
+- `backend/app/services/font_analysis.py` (~130 lines) — **CREATED**
+- Unit test: `backend/tests/test_font_analysis.py` (~400 lines) — **CREATED**
 
 **Verification Tasks:**
-1. Clear text region → returns relative size with confidence >0.7
-2. Degraded text region → returns UNABLE_TO_VERIFY
-3. Font analysis completes in <10ms per prd.md §10.2
-4. No fabricated mm values — only relative fractions when no reference available
+1. [x] Clear text region → returns relative size with confidence >0.7 — **PASS**
+2. [x] Degraded text region → returns UNABLE_TO_VERIFY — **PASS**
+3. [x] Font analysis completes in <10ms per prd.md §10.2 — **PASS** (0.19s for 29 tests)
+4. [x] No fabricated mm values — only relative fractions when no reference available — **PASS**
 
-**Regression Check:** Phase 4.1 tests still pass
+**Regression Check:** All 327 tests pass (298 Phase 1-4.1 + 29 font analysis)
 
 **Git Instructions:**
 ```bash
