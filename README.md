@@ -48,7 +48,7 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 
 ---
 
-## Implemented Features (Phase 0–5.1)
+## Implemented Features (Phase 0–5.2)
 
 ### Phase 0: Infrastructure ✅
 - Docker Compose with 6 services (backend, worker, frontend, postgres, redis, minio)
@@ -103,6 +103,17 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 - **Missing → FAIL** — Mandatory fields missing → type MISSING, never silent pass
 - **100% deterministic** — Same inputs always produce same outputs per FR-010
 
+### Phase 5.2: Rule CRUD API & Compliance Engine ✅
+- **Rule CRUD API** — POST/GET /rules, POST /rules/{id}/versions, POST publish
+- **Rule versioning** — Append-only; legal_reference required before publish
+- **Overlapping date check** — Blocks publish when effective_date conflicts
+- **Audit logging** — Every publish action logged
+- **Compliance decision engine** — 5-state output: COMPLIANT, NON_COMPLIANT,
+  PARTIALLY_COMPLIANT, NEEDS_HUMAN_REVIEW, INSUFFICIENT_EVIDENCE
+- **Severity assignment** — CRITICAL (missing mandatory), MAJOR (format dates),
+  MINOR (other violations)
+- **Per-field compliance** — Each field tracked with rule_version_id reference
+
 ---
 
 ## API Endpoints
@@ -152,7 +163,7 @@ curl http://localhost:8000/health
 ### Running Tests
 
 ```bash
-# Backend tests (209 tests)
+# Backend tests (443 tests)
 cd backend
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
@@ -189,14 +200,19 @@ backend/
 │   │   ├── extraction.py          # OCR fixes, normalization, field extraction
 │   │   ├── classification.py     # TF-IDF + GB classifier (10 categories)
 │   │   ├── font_analysis.py       # Relative-proxy font size estimation
-│   │   └── rule_engine.py         # Deterministic rule evaluator (Phase 5.1)
+│   │   ├── rule_engine.py         # Deterministic rule evaluator (Phase 5.1)
+│   │   ├── compliance_engine.py   # 5-state compliance decision engine (Phase 5.2)
+│   │   ├── api/
+│   │   │   ├── rules.py           # Rule CRUD + versioning + publish (Phase 5.2)
+│   │   │   └── ...                # auth.py, inspections.py, audit.py
 │   ├── models/                    # 15 SQLAlchemy models
 │   ├── schemas/                   # Pydantic request/response models
+│   │   ├── rule.py                # Rule CRUD request/response schemas (Phase 5.2)
 │   └── middleware/
 │       └── audit.py               # Audit middleware for mutating ops
 ├── alembic/                       # Database migrations
 ├── scripts/                       # Seed data scripts
-├── tests/                         # 385 unit tests
+├── tests/                         # 443 unit tests
 ├── requirements.txt               # Production dependencies
 ├── requirements-dev.txt           # Dev/test dependencies
 └── Dockerfile                     # Python 3.14-slim
@@ -218,7 +234,8 @@ backend/
 | `test_classification.py` | 33 | Product category classification |
 | `test_font_analysis.py` | 29 | Font size estimation, confidence scoring |
 | `test_rule_engine.py` | 58 | Rule evaluation, versioning, all validation types |
-| **Total** | **385** | **All passing** |
+| `test_rules_api.py` | 58 | Rule CRUD schemas, compliance engine, decision matrix |
+| **Total** | **443** | **All passing** |
 
 ---
 
@@ -252,8 +269,8 @@ backend/
 | Phase 3.3 | ✅ Complete | 56 | Text normalization & declaration extraction |
 | Phase 4 | ✅ Complete | 62 | Classification + font analysis |
 | Phase 5.1 | ✅ Complete | 58 | Rule engine evaluator |
-| Phase 5.2 | ⏳ Next | — | Rule CRUD API endpoints |
-| Phase 5.3 | ⏳ Pending | — | Compliance checking service |
+| Phase 5.2 | ✅ Complete | 58 | Rule CRUD API + Compliance Decision Engine |
+| Phase 5.3 | ⏳ Pending | — | Compliance checking service integration |
 | Phase 6 | ⏳ Pending | — | Evidence & human review |
 | Phase 7 | ⏳ Pending | — | Reports & dashboard |
 | Phase 8 | ⏳ Pending | — | Frontend UI |

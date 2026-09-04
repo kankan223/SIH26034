@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-03 18:35
+**Last Updated (UTC):** 2026-09-03 19:00
 **Current Phase:** Phase 5: Rule Engine & Compliance Checking
-**Current Subphase:** Subphase 5.1: Rule Engine Core (COMPLETE)
-**Current Task:** Task 5.2.1: Rule CRUD API (NEXT)
+**Current Subphase:** Subphase 5.2: Rule CRUD API & Compliance Engine (COMPLETE)
+**Current Task:** Task 5.3.1: Compliance checking service integration (NEXT)
 
 ---
 
@@ -21,7 +21,8 @@
 | test_classification.py | 33 | ✅ PASS |
 | test_font_analysis.py | 29 | ✅ PASS |
 | test_rule_engine.py | 58 | ✅ PASS |
-| **Total** | **385** | **✅ ALL PASSING** |
+| test_rules_api.py | 58 | ✅ PASS |
+| **Total** | **443** | **✅ ALL PASSING** |
 
 ---
 
@@ -31,10 +32,11 @@
 +---------------------------------------------------------------+
 | PHASE 5: Rule Engine & Compliance Checking                     |
 | SUBPHASE 5.1: Rule Engine Core (COMPLETE)                      |
-| TASK 5.1.1: Rule engine evaluator (COMPLETE)                   |
+| SUBPHASE 5.2: Rule CRUD API & Compliance Engine (COMPLETE)     |
+| TASK 5.2.1: Rule CRUD API + Compliance Engine (COMPLETE)       |
 |                                                                |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-03 18:20 UTC                                |
+| Completed: 2026-09-03 19:00 UTC                                |
 +---------------------------------------------------------------+
 ```
 
@@ -87,6 +89,7 @@
 | 2026-09-03 18:05 | 4.2.1 | Font size estimation: relative-proxy method, confidence scoring, UNABLE_TO_VERIFY | backend/app/services/font_analysis.py, backend/tests/test_font_analysis.py | VERIFIED | 327/327 tests passing, <10ms per assessment | No fabricated mm values — honest uncertainty reporting | AI Agent |
 | 2026-09-03 18:20 | 5.1.1 | Rule engine evaluator: deterministic, data-driven, versioned, all validation types | backend/app/services/rule_engine.py, backend/tests/test_rule_engine.py | VERIFIED | 385/385 tests passing, evaluation <1ms | 3 validation types (regex_and_presence, presence_only, format_check), every verdict references rule_versions.id | AI Agent |
 | 2026-09-03 18:35 | CHORE | Full regression test (385/385 pass), README.md updated through Phase 5.1, progress state synced | README.md, current_progress.md | VERIFIED | N/A | No regressions, documentation reflects all completed phases | AI Agent |
+| 2026-09-03 19:00 | 5.2.1 | Task 5.2.1 COMPLETE: Rule CRUD API endpoints (POST/GET /rules, versioning, publish) + Compliance Decision Engine (5-state output: COMPLIANT/NON_COMPLIANT/PARTIALLY_COMPLIANT/NEEDS_HUMAN_REVIEW/INSUFFICIENT_EVIDENCE) + 58 new tests | backend/app/api/rules.py, backend/app/schemas/rule.py, backend/app/services/compliance_engine.py, backend/tests/test_rules_api.py, README.md, todo.md, current_progress.md | VERIFIED | 443/443 tests passing, no regressions | Schema validation (RuleCreateRequest, RuleVersionCreateRequest, RuleListQueryParams), compliance decision matrix (all 5 outcomes), severity heuristics (CRITICAL/MAJOR/MINOR), deterministic output verified | AI Agent |
 
 ---
 

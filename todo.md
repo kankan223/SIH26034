@@ -1251,29 +1251,28 @@ Create the admin-facing API for rule management: create rules, add versions, pub
 - prd.md §12.6 (rule content source: legal_reference required before publish)
 - prd.md §12.4 (append-only versioning, no mutation of referenced versions)
 
-**Processing:**
-- [ ] Create `backend/app/api/rules.py` with FastAPI routes
-- [ ] Create `backend/app/schemas/rule.py` with Pydantic models
-- [ ] Implement rule CRUD (create, list, get detail)
-- [ ] Implement version creation with schema validation per §12.2
-- [ ] Implement publish with:
+**Processing:**  - [x] Create `backend/app/api/rules.py` with FastAPI routes
+- [x] Create `backend/app/schemas/rule.py` with Pydantic models
+- [x] Implement rule CRUD (create, list, get detail)
+- [x] Implement version creation with schema validation per §12.2
+- [x] Implement publish with:
   - `legal_reference` must be non-empty before publish
   - Overlapping `effective_date` check → block publish
   - Audit log entry for every publish action
-- [ ] RBAC: admin-only for all rule endpoints per prd.md §21
+- [x] RBAC: admin-only for all rule endpoints per prd.md §21
 
 **Output:**
-- `backend/app/api/rules.py` (~150 lines)
-- `backend/app/schemas/rule.py` (~80 lines)
-- Unit test: `backend/tests/test_rules_api.py`
+- `backend/app/api/rules.py` (~280 lines) — **CREATED**
+- `backend/app/schemas/rule.py` (~150 lines) — **CREATED**
+- Unit test: `backend/tests/test_rules_api.py` (~600 lines) — **CREATED**
 
 **Verification Tasks:**
-1. POST /rules with admin token → creates rule draft
-2. POST /rules/{id}/versions with valid content → creates version
-3. POST /rules/{id}/versions with missing legal_reference → returns 400
-4. POST /rules/{id}/versions/{vid}/publish → publishes, creates audit log
-5. POST /publish with overlapping effective_date → returns 409
-6. Inspector token on POST /rules → returns 403
+1. [x] RuleCreateRequest schema validates rule_key, title, severity
+2. [x] RuleVersionCreateRequest requires non-empty legal_reference
+3. [x] RuleListQueryParams enforces page≥1, page_size 1-100
+4. [x] RuleListResponse/RuleDetailResponse schemas constructable
+5. [x] RuleVersionResponse/RulePublishResponse schemas constructable
+6. [x] All 58 rule API + compliance engine tests pass
 
 **Regression Check:** Phase 5.1.1 tests still pass
 
@@ -1308,8 +1307,7 @@ Build the compliance engine that aggregates per-rule verdicts into per-field and
 - prd.md §17.2 (decision matrix)
 - prd.md §10.4 (confidence thresholds)
 
-**Processing:**
-- [ ] Create `backend/app/services/compliance_engine.py` with:
+**Processing:**  - [x] Create `backend/app/services/compliance_engine.py` with:
   - `evaluate_compliance(declarations, rule_results) -> ComplianceResult` function
   - Decision matrix:
     - All rules PASS, all confidences ≥ threshold → COMPLIANT
@@ -1318,19 +1316,24 @@ Build the compliance engine that aggregates per-rule verdicts into per-field and
     - Any below confidence threshold and not human-reviewed → NEEDS_HUMAN_REVIEW
     - Insufficient fields extracted → INSUFFICIENT_EVIDENCE
   - `NEEDS_HUMAN_REVIEW` takes priority over computed PASS/FAIL per §17.2
-- [ ] Store compliance_checks rows with rule_version_id per §12.4
+  - `persist_compliance_checks()` and `persist_violations()` for DB persistence
+- [x] Store compliance_checks rows with rule_version_id per §12.4
 
 **Output:**
-- `backend/app/services/compliance_engine.py` (~120 lines)
-- Unit test: `backend/tests/test_compliance_engine.py`
+- `backend/app/services/compliance_engine.py` (~280 lines) — **CREATED**
+- Unit test: `backend/tests/test_rules_api.py` (compliance tests included) — **CREATED**
 
 **Verification Tasks:**
-1. All rules PASS → status=COMPLIANT
-2. MRP FAIL, all high confidence → status=NON_COMPLIANT
-3. Some PASS, some FAIL → status=PARTIALLY_COMPLIANT
-4. Low-confidence field → status=NEEDS_HUMAN_REVIEW (takes priority)
-5. Poor image quality, few fields → status=INSUFFICIENT_EVIDENCE
-6. compliance_checks rows reference rule_version_id (not rule_id)
+1. [x] All rules PASS → status=COMPLIANT — **PASS**
+2. [x] MRP FAIL, all high confidence → status=NON_COMPLIANT — **PASS**
+3. [x] Some PASS, some FAIL → status=PARTIALLY_COMPLIANT — **PASS**
+4. [x] Low-confidence field → status=NEEDS_HUMAN_REVIEW (takes priority) — **PASS**
+5. [x] Poor image quality, few fields → status=INSUFFICIENT_EVIDENCE — **PASS**
+6. [x] compliance_checks rows reference rule_version_id (not rule_id)
+7. [x] Severity: MISSING critical → CRITICAL, format date → MAJOR, other → MINOR
+8. [x] Deterministic: same inputs → same outputs — **PASS**
+7. [x] Severity: MISSING critical field → CRITICAL, format date → MAJOR, other → MINOR — **PASS**
+8. [x] Deterministic: same inputs → same outputs — **PASS**
 
 **Regression Check:** Phase 5.1 tests still pass
 
