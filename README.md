@@ -48,7 +48,7 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 
 ---
 
-## Implemented Features (Phase 0–3)
+## Implemented Features (Phase 0–5.1)
 
 ### Phase 0: Infrastructure ✅
 - Docker Compose with 6 services (backend, worker, frontend, postgres, redis, minio)
@@ -81,6 +81,28 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 - **Small-font upscaling** — Bicubic 3x when text height < 12px
 - **Confidence filtering** — Results <0.5 flagged as NOT_FOUND
 
+### Phase 3.3: Text Normalization & Extraction ✅
+- **OCR substitution fixes** — O/0, l/1, etc.
+- **Unit normalization** — g/gm/gram → g, ml/mL → ml
+- **Currency normalization** — ₹/Rs. → INR
+- **Date parsing** — MM/YYYY → YYYY-MM
+- **Declaration extraction** — All 14 field types per prd.md §14.1
+- **NOT_FOUND handling** — Missing fields explicitly recorded, never omitted
+
+### Phase 4: Classification & Font Analysis ✅
+- **Product category classifier** — TF-IDF + GradientBoosting, 10 categories
+- **Confidence threshold** — ≥0.6; below routes to manual selection
+- **Font size estimation** — Relative-proxy method (text height / package height)
+- **UNABLE_TO_VERIFY** — Honest uncertainty reporting, no fabricated mm values
+
+### Phase 5.1: Rule Engine ✅
+- **Deterministic rule evaluator** — Rules are data, not code
+- **3 validation types** — regex_and_presence, presence_only, format_check
+- **Versioned rule execution** — Every verdict references exact rule_versions.id
+- **Category/Package matching** — applies_when conditions enforced
+- **Missing → FAIL** — Mandatory fields missing → type MISSING, never silent pass
+- **100% deterministic** — Same inputs always produce same outputs per FR-010
+
 ---
 
 ## API Endpoints
@@ -95,6 +117,10 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 | POST | `/api/v1/inspections/{id}/images` | inspector+ | Upload image |
 | GET | `/api/v1/audit-logs` | admin | List audit logs |
 | GET | `/api/v1/audit-logs/{id}` | admin | Get audit log entry |
+| POST | `/api/v1/rules` | admin | Create rule (Phase 5.2) |
+| GET | `/api/v1/rules` | admin | List rules |
+| POST | `/api/v1/rules/{id}/versions` | admin | Add rule version |
+| POST | `/api/v1/rules/{id}/versions/{vid}/publish` | admin | Publish rule version |
 | GET | `/health` | None | Health check |
 
 ---
@@ -159,14 +185,18 @@ backend/
 │   │   ├── ocr_service.py         # PaddleOCR text extraction
 │   │   ├── storage.py             # MinIO object storage
 │   │   ├── audit_service.py       # Append-only audit logging
-│   │   └── inspection_service.py  # Inspection CRUD operations
+│   │   ├── inspection_service.py  # Inspection CRUD operations
+│   │   ├── extraction.py          # OCR fixes, normalization, field extraction
+│   │   ├── classification.py     # TF-IDF + GB classifier (10 categories)
+│   │   ├── font_analysis.py       # Relative-proxy font size estimation
+│   │   └── rule_engine.py         # Deterministic rule evaluator (Phase 5.1)
 │   ├── models/                    # 15 SQLAlchemy models
 │   ├── schemas/                   # Pydantic request/response models
 │   └── middleware/
 │       └── audit.py               # Audit middleware for mutating ops
 ├── alembic/                       # Database migrations
 ├── scripts/                       # Seed data scripts
-├── tests/                         # 209 unit tests
+├── tests/                         # 385 unit tests
 ├── requirements.txt               # Production dependencies
 ├── requirements-dev.txt           # Dev/test dependencies
 └── Dockerfile                     # Python 3.14-slim
@@ -185,7 +215,10 @@ backend/
 | `test_cv_detection.py` | 40 | Package/label detection, NMS, fallback |
 | `test_ocr_service.py` | 35 | Text extraction, language, upscaling |
 | `test_storage.py` | 32 | Upload, dedup, EXIF, presigned URLs |
-| **Total** | **209** | **All passing** |
+| `test_classification.py` | 33 | Product category classification |
+| `test_font_analysis.py` | 29 | Font size estimation, confidence scoring |
+| `test_rule_engine.py` | 58 | Rule evaluation, versioning, all validation types |
+| **Total** | **385** | **All passing** |
 
 ---
 
@@ -216,8 +249,11 @@ backend/
 | Phase 1 | ✅ Complete | 76 | Auth, RBAC, Inspection CRUD, Audit |
 | Phase 2 | ✅ Complete | 58 | Image quality gate, MinIO storage |
 | Phase 3 | ✅ Complete | 75 | YOLO detection, PaddleOCR |
-| Phase 4 | ⏳ Next | — | Declaration extraction, classification |
-| Phase 5 | ⏳ Pending | — | Rule engine, compliance checking |
+| Phase 3.3 | ✅ Complete | 56 | Text normalization & declaration extraction |
+| Phase 4 | ✅ Complete | 62 | Classification + font analysis |
+| Phase 5.1 | ✅ Complete | 58 | Rule engine evaluator |
+| Phase 5.2 | ⏳ Next | — | Rule CRUD API endpoints |
+| Phase 5.3 | ⏳ Pending | — | Compliance checking service |
 | Phase 6 | ⏳ Pending | — | Evidence & human review |
 | Phase 7 | ⏳ Pending | — | Reports & dashboard |
 | Phase 8 | ⏳ Pending | — | Frontend UI |
