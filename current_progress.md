@@ -3,7 +3,7 @@
 **Last Updated (UTC):** 2026-09-03 19:00
 **Current Phase:** Phase 5: Rule Engine & Compliance Checking
 **Current Subphase:** Subphase 5.2: Rule CRUD API & Compliance Engine (COMPLETE)
-**Current Task:** Task 5.3.1: Compliance checking service integration (NEXT)
+**Current Task:** Task 5.3.1: Compliance checking service integration (IN PROGRESS)
 
 ---
 
@@ -22,7 +22,8 @@
 | test_font_analysis.py | 29 | ✅ PASS |
 | test_rule_engine.py | 58 | ✅ PASS |
 | test_rules_api.py | 58 | ✅ PASS |
-| **Total** | **443** | **✅ ALL PASSING** |
+| test_pipeline.py | 44 | ✅ PASS |
+| **Total** | **487** | **✅ ALL PASSING** |
 
 ---
 
@@ -33,10 +34,13 @@
 | PHASE 5: Rule Engine & Compliance Checking                     |
 | SUBPHASE 5.1: Rule Engine Core (COMPLETE)                      |
 | SUBPHASE 5.2: Rule CRUD API & Compliance Engine (COMPLETE)     |
-| TASK 5.2.1: Rule CRUD API + Compliance Engine (COMPLETE)       |
+| SUBPHASE 5.3: Pipeline Integration, Evidence & Reports (COMPLETE)|
+| TASK 5.3.1: Pipeline Integration (COMPLETE)                    |
+| TASK 5.3.2: Evidence Generation Engine (COMPLETE)              |
+| TASK 5.3.3: PDF Report Generator (COMPLETE)                    |
 |                                                                |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-03 19:00 UTC                                |
+| Completed: 2026-09-04 02:30 UTC                                |
 +---------------------------------------------------------------+
 ```
 
@@ -90,6 +94,7 @@
 | 2026-09-03 18:20 | 5.1.1 | Rule engine evaluator: deterministic, data-driven, versioned, all validation types | backend/app/services/rule_engine.py, backend/tests/test_rule_engine.py | VERIFIED | 385/385 tests passing, evaluation <1ms | 3 validation types (regex_and_presence, presence_only, format_check), every verdict references rule_versions.id | AI Agent |
 | 2026-09-03 18:35 | CHORE | Full regression test (385/385 pass), README.md updated through Phase 5.1, progress state synced | README.md, current_progress.md | VERIFIED | N/A | No regressions, documentation reflects all completed phases | AI Agent |
 | 2026-09-03 19:00 | 5.2.1 | Task 5.2.1 COMPLETE: Rule CRUD API endpoints (POST/GET /rules, versioning, publish) + Compliance Decision Engine (5-state output: COMPLIANT/NON_COMPLIANT/PARTIALLY_COMPLIANT/NEEDS_HUMAN_REVIEW/INSUFFICIENT_EVIDENCE) + 58 new tests | backend/app/api/rules.py, backend/app/schemas/rule.py, backend/app/services/compliance_engine.py, backend/tests/test_rules_api.py, README.md, todo.md, current_progress.md | VERIFIED | 443/443 tests passing, no regressions | Schema validation (RuleCreateRequest, RuleVersionCreateRequest, RuleListQueryParams), compliance decision matrix (all 5 outcomes), severity heuristics (CRITICAL/MAJOR/MINOR), deterministic output verified | AI Agent |
+| 2026-09-04 02:30 | 5.3 | Subphase 5.3 COMPLETE: Pipeline integration (44 tests), evidence engine, PDF report generator (12-section, verification seal) | backend/app/tasks/pipeline.py, backend/app/services/evidence_engine.py, backend/app/services/report_generator.py, backend/tests/test_pipeline.py, README.md, todo.md, current_progress.md | VERIFIED | 487/487 tests passing, no regressions | Pipeline: 9-stage orchestration with independent testability. Evidence: MinIO crop storage, immutable rows. Reports: WeasyPrint + Jinja2, design tokens, seal on compliant only. Full suite 487 tests, 0 failures. | AI Agent |
 
 ---
 

@@ -1368,6 +1368,147 @@ pytest backend/tests/test_rule_engine.py backend/tests/test_rules_api.py backend
 
 ---
 
+### Subphase 5.3: Pipeline Integration, Evidence Engine & Report Generation
+
+#### Task 5.3.1: Integrate compliance engine into async pipeline
+
+**Description:**
+Wire the compliance engine and rule engine into the async pipeline worker.
+
+**Input Required:**
+- prd.md §22 (Processing Screen workflow)
+- prd.md §17 (compliance decision engine)
+
+**Processing:**
+- [x] Create `backend/app/tasks/pipeline.py` with:
+  - Full pipeline orchestration: quality → CV → OCR → extraction → classification → rule eval → compliance → evidence → status update
+  - Each stage is independently testable
+  - Pipeline returns structured PipelineResult with all stage outputs
+- [x] Integrate with storage service for image upload
+
+**Output:**
+- `backend/app/tasks/pipeline.py` (~350 lines) — **CREATED**
+- `backend/tests/test_pipeline.py` (~500 lines) — **CREATED**
+
+**Verification Tasks:**
+1. [x] Pipeline produces correct sequence of stage outputs
+2. [x] Compliance engine integrated at correct point
+3. [x] Pipeline handles failures gracefully (warnings for low quality)
+4. [x] Pipeline result includes all required fields
+5. [x] 44 pipeline tests pass
+
+**Regression Check:** All 487 tests pass (443 prior + 44 pipeline)
+
+**Git Instructions:**
+```bash
+git add backend/app/tasks/pipeline.py backend/tests/test_pipeline.py
+git commit -m "feat(pipeline): async compliance analysis pipeline integration
+
+- Orchestrates quality → CV → OCR → extraction → classification → rule eval → compliance
+- Each stage independently testable
+- Pipeline result includes all stage outputs and compliance determination
+- 44 pipeline tests, 487 total tests passing
+
+See: prd.md §22 (processing workflow), prd.md §17 (compliance engine)
+"
+git push origin feature/phase-5-pipeline
+```
+
+#### Task 5.3.2: Implement evidence generation engine
+
+**Description:**
+Build the evidence engine that packages each violation with its supporting image crop,
+bbox, and legal reference per prd.md §18.
+
+**Input Required:**
+- prd.md §18.1 (evidence object schema)
+- prd.md §18.2 (storage design: metadata in Postgres, crops in MinIO)
+- prd.md FR-021 (every violations row has ≥1 linked evidence row)
+
+**Processing:**
+- [x] Create `backend/app/services/evidence_engine.py` with:
+  - `generate_evidence_for_violations()` — creates evidence rows for all violations
+  - `crop_and_upload_evidence()` — crops image at bbox, uploads to MinIO
+  - Evidence is immutable once created per §18.2
+- [x] Evidence row: violation_id, image_id, bbox, crop_storage_url
+
+**Output:**
+- `backend/app/services/evidence_engine.py` (~130 lines) — **CREATED**
+
+**Verification Tasks:**
+1. [x] Given violation + image + bbox → creates evidence row
+2. [x] Evidence row references correct violation_id and image_id
+3. [x] Zero violations → zero evidence created
+
+**Regression Check:** Pipeline tests still pass
+
+**Git Instructions:**
+```bash
+git add backend/app/services/evidence_engine.py
+git commit -m "feat(evidence): evidence generation engine with MinIO crop storage
+
+- Crops image at violation bbox and uploads to MinIO
+- Creates immutable evidence rows in Postgres
+- Every violation gets evidence row (when image available)
+
+See: prd.md §18 (evidence system), prd.md §18.2 (storage design)
+"
+git push origin feature/phase-5-evidence
+```
+
+#### Task 5.3.3: Implement PDF report generator
+
+**Description:**
+Build the report generator that renders finalized inspections to PDF using WeasyPrint + Jinja2 per prd.md §24.
+
+**Input Required:**
+- prd.md §24.1 (report structure: 12 sections)
+- prd.md §24.2 (formats: PDF primary, JSON editable export)
+- prd.md §9 (target: PDF generation ≤10s)
+- design.md §9 (print/PDF visual design)
+
+**Processing:**
+- [x] Create `backend/app/services/report_generator.py` with:
+  - `generate_report()` — renders inspection data to PDF via Jinja2 + WeasyPrint
+  - `generate_report_from_pipeline()` — convenience wrapper from PipelineResult
+  - 12-section report: Cover, Inspection Info, Product Info, Images, Declarations,
+    Compliance Summary, Violations, Evidence Appendix, Legal References,
+    Confidence Notes, Inspector Review, Audit Info
+  - COMPLIANT reports include verification seal per design.md §9
+  - NON_COMPLIANT reports do NOT include verification seal
+  - JSON export as machine-readable format
+- [x] Design tokens from design.md §12 applied to PDF template
+
+**Output:**
+- `backend/app/services/report_generator.py` (~400 lines) — **CREATED**
+
+**Verification Tasks:**
+1. [x] Generate report → PDF HTML contains all 12 sections
+2. [x] COMPLIANT report includes verification seal
+3. [x] NON_COMPLIANT report does NOT include verification seal
+4. [x] Report HTML uses design tokens (colors, fonts from design.md §12)
+5. [x] generate_report_from_pipeline maps pipeline output correctly
+
+**Regression Check:** Pipeline + evidence tests still pass
+
+**Git Instructions:**
+```bash
+git add backend/app/services/report_generator.py
+git commit -m "feat(reports): PDF report generator with WeasyPrint + 12-section structure
+
+- 12-section report per prd.md §24.1
+- Verification seal on COMPLIANT reports only per design.md §9
+- Design tokens from design.md §12 applied to PDF template
+- JSON export as machine-readable format
+- generate_report_from_pipeline convenience wrapper
+
+See: prd.md §24 (report format), design.md §9 (print design)
+"
+git push origin feature/phase-5-reports
+```
+
+---
+
 ## Phase 6: Evidence Generation & Human Review
 
 **Scope:** Evidence objects, human-in-the-loop review, corrections workflow
