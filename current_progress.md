@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
 **Last Updated (UTC):** 2026-09-03 19:00
-**Current Phase:** Phase 5: Rule Engine & Compliance Checking
-**Current Subphase:** Subphase 5.2: Rule CRUD API & Compliance Engine (COMPLETE)
-**Current Task:** Task 5.3.1: Compliance checking service integration (IN PROGRESS)
+**Current Phase:** Phase 6: Evidence Generation & Human Review
+**Current Subphase:** Subphase 6.2: Human Review & Corrections (COMPLETE)
+**Current Task:** Phase 6 Milestone Verification Gate (NEXT)
 
 ---
 
@@ -32,15 +32,15 @@
 ```
 +---------------------------------------------------------------+
 | PHASE 5: Rule Engine & Compliance Checking                     |
-| SUBPHASE 5.1: Rule Engine Core (COMPLETE)                      |
-| SUBPHASE 5.2: Rule CRUD API & Compliance Engine (COMPLETE)     |
-| SUBPHASE 5.3: Pipeline Integration, Evidence & Reports (COMPLETE)|
-| TASK 5.3.1: Pipeline Integration (COMPLETE)                    |
-| TASK 5.3.2: Evidence Generation Engine (COMPLETE)              |
-| TASK 5.3.3: PDF Report Generator (COMPLETE)                    |
+| SUBPHASE 5.1–5.3: All tasks COMPLETE (487/487 tests passing)   |
+|                                                                |
+| PHASE 6: Evidence Generation & Human Review                    |
+| SUBPHASE 6.1: Evidence Engine (COMPLETE)                       |
+| SUBPHASE 6.2: Human Review & Corrections (IN PROGRESS)         |
+| TASK 6.2.1: Human review queue + correction workflow (IN PROGRESS)|
 |                                                                |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-04 02:30 UTC                                |
+| Completed: 2026-09-05 02:00 UTC                                 |
 +---------------------------------------------------------------+
 ```
 
@@ -95,6 +95,7 @@
 | 2026-09-03 18:35 | CHORE | Full regression test (385/385 pass), README.md updated through Phase 5.1, progress state synced | README.md, current_progress.md | VERIFIED | N/A | No regressions, documentation reflects all completed phases | AI Agent |
 | 2026-09-03 19:00 | 5.2.1 | Task 5.2.1 COMPLETE: Rule CRUD API endpoints (POST/GET /rules, versioning, publish) + Compliance Decision Engine (5-state output: COMPLIANT/NON_COMPLIANT/PARTIALLY_COMPLIANT/NEEDS_HUMAN_REVIEW/INSUFFICIENT_EVIDENCE) + 58 new tests | backend/app/api/rules.py, backend/app/schemas/rule.py, backend/app/services/compliance_engine.py, backend/tests/test_rules_api.py, README.md, todo.md, current_progress.md | VERIFIED | 443/443 tests passing, no regressions | Schema validation (RuleCreateRequest, RuleVersionCreateRequest, RuleListQueryParams), compliance decision matrix (all 5 outcomes), severity heuristics (CRITICAL/MAJOR/MINOR), deterministic output verified | AI Agent |
 | 2026-09-04 02:30 | 5.3 | Subphase 5.3 COMPLETE: Pipeline integration (44 tests), evidence engine, PDF report generator (12-section, verification seal) | backend/app/tasks/pipeline.py, backend/app/services/evidence_engine.py, backend/app/services/report_generator.py, backend/tests/test_pipeline.py, README.md, todo.md, current_progress.md | VERIFIED | 487/487 tests passing, no regressions | Pipeline: 9-stage orchestration with independent testability. Evidence: MinIO crop storage, immutable rows. Reports: WeasyPrint + Jinja2, design tokens, seal on compliant only. Full suite 487 tests, 0 failures. | AI Agent |
+| 2026-09-05 02:00 | 6.2 | Subphase 6.2 COMPLETE: Human review queue + correction workflow (26 new tests) | backend/app/services/review_queue.py, backend/app/api/reviews.py, backend/tests/test_review.py, backend/app/models/inspection.py, backend/app/models/product.py | VERIFIED | 513/513 tests passing, no regressions | Review routing (confidence-based), correction workflow (mandatory reason, audit logged), report submission gate (blocks NEEDS_REVIEW), RBAC on endpoints (senior_officer+ for corrections, any auth for confirm), review queue summary KPIs. Full suite 513 tests, 0 failures. | AI Agent |
 
 ---
 

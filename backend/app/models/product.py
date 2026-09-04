@@ -22,4 +22,10 @@ class Product(UUIDPrimaryKeyMixin, Base):
 
     # Relationships
     category = relationship("Category", back_populates="products", lazy="selectin")
-    inspections = relationship("Inspection", back_populates="product", lazy="selectin")
+    inspections = relationship(
+        "Inspection",
+        back_populates="product",
+        lazy="selectin",
+        primaryjoin="Product.id == Inspection.product_id",
+        foreign_keys="Inspection.product_id",
+    )
