@@ -1719,6 +1719,55 @@ git push origin feature/phase-7-reports
 
 ---
 
+#### Task 7.1.2: Report generation enhancement (evidence thumbnails, DOCX export, scheduling)
+
+**Description:**
+Extend the report generator to embed real violation evidence thumbnails in PDF reports, add an editable DOCX export alongside PDF, and implement report scheduling for asynchronous batch generation per prd.md §24.2.
+
+**Input Required:**
+- prd.md §24.2 (formats: PDF primary, JSON editable export; DOCX as editable alternative)
+- prd.md §9 (target: PDF generation ≤10s)
+- design.md §9 (print/PDF visual design), design.md §12 (design tokens)
+- tech-stack.md §5 (WeasyPrint + python-docx)
+
+**Processing:**
+- [x] Wire real image URLs and evidence crops (violation_id, crop_storage_url, bbox) from PipelineResult into the PDF report
+- [x] Add `generate_docx()` producing a 12-section editable DOCX (python-docx), verification seal only for COMPLIANT per design.md §9
+- [x] Add `schedule_report()` / `get_scheduled_reports()` / `process_scheduled_reports()` for async batch generation
+- [x] Add python-docx to backend/requirements.txt (lazy import keeps the module loadable without the package)
+
+**Output:**
+- `backend/app/services/report_generator.py` (enhanced) — **UPDATED**
+- `backend/tests/test_report_generator.py` (~260 lines) — **CREATED**
+- `backend/requirements.txt` (python-docx added) — **UPDATED**
+
+**Verification Tasks:**
+1. [x] PDF report renders real evidence crops with bounding box coordinates — **PASS**
+2. [x] `generate_docx()` returns a valid .docx (zip magic, 12 sections, ≥4 tables) — **PASS**
+3. [x] NON_COMPLIANT DOCX omits the verification seal — **PASS**
+4. [x] `process_scheduled_reports()` transitions due entries to done, leaves future entries scheduled — **PASS**
+5. [x] Full suite 540/540 passing, no regressions — **PASS** (57.6s runtime)
+
+**Regression Check:** All 530 prior tests pass (dashboard + all earlier phases)
+
+**Git Instructions:**
+```bash
+git add backend/app/services/report_generator.py backend/tests/test_report_generator.py backend/requirements.txt
+git commit -m "feat(reports): evidence thumbnails, DOCX export, and report scheduling
+
+- PDF now embeds real evidence crops with bounding box coordinates per prd.md §24.2
+- Editable 12-section DOCX export via python-docx per prd.md §24.2
+- Verification seal on COMPLIANT exports only per design.md §9
+- In-memory scheduler for asynchronous batch generation
+- python-docx 1.1.x added to requirements (lazy import)
+
+See: prd.md §24 (report formats), design.md §9 (print design)
+"
+git push origin feature/phase-7-reports
+```
+
+---
+
 ### Subphase 7.2: Dashboard & Analytics
 
 #### Task 7.2.1: Implement dashboard KPI endpoints

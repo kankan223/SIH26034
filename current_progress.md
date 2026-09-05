@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-05 02:00
-**Current Phase:** Phase 6: Evidence Generation & Human Review
-**Current Subphase:** Subphase 6.2: Human Review & Corrections (COMPLETE)
-**Current Task:** Phase 6 Milestone Verification Gate (COMPLETE) — All 513 tests passing
+**Last Updated (UTC):** 2026-09-05 04:00
+**Current Phase:** Phase 7: Reports & Dashboard
+**Current Subphase:** Subphase 7.1: Report Generation (Task 7.1.2 COMPLETE)
+**Current Task:** Phase 7 Milestone Verification Gate (IN PROGRESS) — All 540 tests passing
 
 ---
 
@@ -24,7 +24,9 @@
 | test_rules_api.py | 58 | ✅ PASS |
 | test_pipeline.py | 44 | ✅ PASS |
 | test_review.py | 26 | ✅ PASS |
-| **Total** | **513** | **✅ ALL PASSING** |
+| test_dashboard.py | 17 | ✅ PASS |
+| test_report_generator.py | 10 | ✅ PASS |
+| **Total** | **540** | **✅ ALL PASSING** |
 
 ---
 
@@ -32,18 +34,18 @@
 
 ```
 +---------------------------------------------------------------+
-| PHASE 5: Rule Engine & Compliance Checking                     |
-| SUBPHASE 5.1–5.3: All tasks COMPLETE (513/513 tests passing)   |
+| PHASE 7: Reports & Dashboard                                    |
+| SUBPHASE 7.1: Report Generation (COMPLETE)                     |
+| TASK 7.1.1: PDF report generator (COMPLETE)                    |
+| TASK 7.1.2: Evidence thumbnails + DOCX export + scheduling     |
+|             (COMPLETE)                                         |
+| SUBPHASE 7.2: Dashboard & Analytics (COMPLETE)                 |
+| TASK 7.2.1: Dashboard KPI endpoints (COMPLETE)                 |
 |                                                                |
-| PHASE 6: Evidence Generation & Human Review                    |
-| SUBPHASE 6.1: Evidence Engine (COMPLETE)                       |
-| SUBPHASE 6.2: Human Review & Corrections (COMPLETE)            |
-| TASK 6.2.1: Human review queue + correction workflow (COMPLETE)|
-|                                                                |
-| PHASE 6 MILESTONE: COMPLETE — 513/513 tests passing            |
+| PHASE 7 MILESTONE: 540/540 tests passing                       |
 |                                                                |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-05 03:00 UTC                                 |
+| Completed: 2026-09-05 04:00 UTC                                 |
 +---------------------------------------------------------------+
 ```
 
@@ -101,6 +103,8 @@
 | 2026-09-04 02:30 | 5.3 | Subphase 5.3 COMPLETE: Pipeline integration (44 tests), evidence engine, PDF report generator (12-section, verification seal) | backend/app/tasks/pipeline.py, backend/app/services/evidence_engine.py, backend/app/services/report_generator.py, backend/tests/test_pipeline.py, README.md, todo.md, current_progress.md | VERIFIED | 487/487 tests passing, no regressions | Pipeline: 9-stage orchestration with independent testability. Evidence: MinIO crop storage, immutable rows. Reports: WeasyPrint + Jinja2, design tokens, seal on compliant only. Full suite 487 tests, 0 failures. | AI Agent |
 | 2026-09-05 02:00 | 6.2 | Subphase 6.2 COMPLETE: Human review queue + correction workflow (26 new tests) | backend/app/services/review_queue.py, backend/app/api/reviews.py, backend/tests/test_review.py, backend/app/models/inspection.py, backend/app/models/product.py | VERIFIED | 513/513 tests passing, no regressions | Review routing (confidence-based), correction workflow (mandatory reason, audit logged), report submission gate (blocks NEEDS_REVIEW), RBAC on endpoints (senior_officer+ for corrections, any auth for confirm), review queue summary KPIs. Full suite 513 tests, 0 failures. | AI Agent |
 | 2026-09-05 03:00 | PHASE 6 | Phase 6 verification gate PASSED — 513/513 tests passing, Phase 6 complete | README.md, current_progress.md, todo.md | VERIFIED | 53.6s full suite runtime, 0 failures | No regressions. Phase 6 complete: review queue, corrections, audit logging, RBAC on review endpoints, model fixes (Product.inspections primaryjoin, Inspection.product relationship). Ready for Phase 7 (Reports & Dashboard). | AI Agent |
+| 2026-09-05 03:30 | 7.2.1 | Dashboard KPI endpoints: GET /dashboard/kpis, /trends, /categories with RBAC + audit logging (17 new tests) | backend/app/api/dashboard.py, backend/app/schemas/dashboard.py, backend/tests/test_dashboard.py, backend/app/main.py, backend/app/api/reviews.py | VERIFIED | 530/530 tests passing, no regressions | Fixed CORRECTION_RESPONSE → CorrectionResponse in reviews.py; Role imported from core.constants | AI Agent |
+| 2026-09-05 04:00 | 7.1.2 | Report generation enhancement: real evidence/image URLs in PDF, 12-section DOCX export, async report scheduling + 10 new tests | backend/app/services/report_generator.py, backend/tests/test_report_generator.py, backend/requirements.txt | VERIFIED | 540/540 tests passing, no regressions | python-docx 1.1.2 added to requirements; DOCX import is lazy so module loads without the package | AI Agent |
 
 ---
 
@@ -153,34 +157,12 @@ Initial commit: Phase 0 scaffolding
 
 ---
 
-## Next Steps (Phase 7)
+## Next Steps (Phase 8)
 
-### Subphase 7.1: Dashboard & Analytics APIs
-1. Implement `backend/app/api/dashboard.py` — GET /dashboard/kpis, GET /dashboard/trends, GET /dashboard/categories
-2. Create `backend/app/schemas/dashboard.py` — Pydantic schemas for dashboard responses
-3. Write tests in `backend/tests/test_dashboard.py`
-4. Apply RBAC: senior_officer+ for KPIs, admin for raw trends
-5. Audit log all dashboard queries
-
-### Subphase 7.2: Report Generation Enhancement
-1. Extend PDF report generator with violation evidence thumbnails
-2. Add DOCX export format option
-3. Implement report scheduling for batch generation
+### Subphase 8.1: Frontend Core
+1. Wire React Query hooks (`useInspection`, `useAuth`) to backend endpoints in `frontend/src/pages/`
+2. Verify frontend compliance with design system tokens (`frontend/src/styles/tokens.css`)
+3. Implement core components per design.md §7: `LedgerRow.tsx`, `MeasureRule.tsx`, `EvidenceCard.tsx`
 
 ### Next: Phase 7 Milestone Verification Gate
-Run full test suite, verify dashboard endpoints, then proceed to Phase 8 (Frontend).
- Security Utilities & Authentication
-1. Implement `backend/app/core/security.py` — password hashing (bcrypt) + JWT (python-jose)
-2. Implement `backend/app/api/auth.py` — POST /auth/login + POST /auth/refresh endpoints
-3. Create `backend/app/schemas/auth.py` — Pydantic request/response models
-
-### Subphase 1.2: RBAC Middleware ✓
-1. Implement `backend/app/core/rbac.py` — FastAPI dependencies for role-based access ✓
-2. Create `backend/app/core/constants.py` — shared enums ✓
-
-### Subphase 1.3: Inspection CRUD & Audit Logging ✓
-1. Implement inspection CRUD endpoints — Task 1.3.1 ✓
-2. Implement audit logging service (append-only) — Task 1.3.2 ✓
-
-### Next: Phase 1 Milestone Verification Gate
-Run full Phase 1 test suite, verify all endpoints, then proceed to Phase 2.
+Run the Phase 7 gate (`pytest backend/tests/test_report_generator.py backend/tests/test_dashboard.py -v`), then proceed to Phase 8 (Frontend UI).

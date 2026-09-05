@@ -161,6 +161,202 @@ def generate_report(
     )
 
 
+# ── DOCX export ────────────────────────────────────────────────────────────────
+
+def _add_key_value_table(doc: Any, pairs: dict[str, Any]) -> None:
+    """Append a two-column key/value table to the DOCX document."""
+    table = doc.add_table(rows=0, cols=2)
+    table.style = "Light Grid Accent 1"
+    for key, value in pairs.items():
+        row = table.add_row().cells
+        row[0].text = key
+        row[1].text = str(value)
+
+
+def generate_docx(
+    inspection_data: dict[str, Any],
+    compliance_result: dict[str, Any],
+    image_urls: list[str],
+    evidence_crops: list[dict[str, Any]],
+    legal_references: list[str],
+) -> bytes:
+    """Generate an editable DOCX report per prd.md §24.2.
+
+    Mirrors the 12-section PDF structure so officers can annotate and
+    re-export the report. Returns the .docx document as bytes (uploaded
+    alongside the PDF to MinIO). Evidence crops are referenced by
+    violation ID + bounding box; thumbnails are embedded in the PDF.
+
+    Requires python-docx (tech-stack.md §5); raises ImportError if missing.
+    """
+    from docx import Document as DocxDocument
+    from docx.shared import Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    import io
+
+    tokens = _get_design_tokens()
+
+    def _rgb(hex_color: str) -> RGBColor:
+        hex_color = hex_color.lstrip("#")
+        return RGBColor(
+            int(hex_color[0:2], 16),
+            int(hex_color[2:4], 16),
+            int(hex_color[4:6], 16),
+        )
+
+    doc = DocxDocument()
+
+    # Base styles per design.md §12 (typography tokens)
+    normal = doc.styles["Normal"]
+    normal.font.name = tokens["font_body"]
+    normal.font.size = Pt(10)
+
+    # 1. Cover
+    title = doc.add_heading("Docket — Legal Metrology Compliance Report", level=0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    subtitle = doc.add_paragraph("Ministry of Consumer Affairs, Food & Public Distribution")
+    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"Inspection Reference: {inspection_data.get('id', 'N/A')}")
+    doc.add_paragraph(f"Classification: {compliance_result.get('overall_status', 'N/A')}")
+    doc.add_page_break()
+
+    # 2. Inspection info
+    doc.add_heading("2. Inspection Information", level=1)
+    _add_key_value_table(doc, {
+        "Inspection ID": inspection_data.get("id", "N/A"),
+        "Inspector": inspection_data.get("inspector_name", "N/A"),
+        "Date": inspection_data.get("created_at", "N/A"),
+        "Location": inspection_data.get("location", "N/A"),
+        "Region": inspection_data.get("region", "N/A"),
+        "Source": inspection_data.get("source", "N/A"),
+    })
+
+    # 3. Product info
+    doc.add_heading("3. Product Information", level=1)
+    _add_key_value_table(doc, {
+        "Product Name": inspection_data.get("product_name", "N/A"),
+        "Category": inspection_data.get("category", "N/A"),
+        "Package Type": inspection_data.get("package_type", "N/A"),
+        "Classifier Confidence": inspection_data.get("classification_confidence", "N/A"),
+    })
+
+    # 4. Images (referenced; binary embedding happens in the PDF)
+    doc.add_heading("4. Images", level=1)
+    if image_urls:
+        for url in image_urls:
+            doc.add_paragraph(url, style="List Bullet")
+    else:
+        doc.add_paragraph("No source images recorded.")
+
+    # 5. Declarations
+    doc.add_heading("5. Declarations", level=1)
+    declarations = inspection_data.get("declarations", [])
+    if declarations:
+        table = doc.add_table(rows=1, cols=4)
+        table.style = "Light Grid Accent 1"
+        for i, header in enumerate(["Field", "Detected Value", "Confidence", "Status"]):
+            table.rows[0].cells[i].text = header
+        for decl in declarations:
+            value = decl.get("value", {})
+            text = value.get("text", "NOT_FOUND") if isinstance(value, dict) else str(value)
+            status = "PASS" if decl.get("confidence", 0) >= 0.5 else "LOW_CONF"
+            row = table.add_row().cells
+            row[0].text = decl.get("field_type", "unknown")
+            row[1].text = str(text)
+            row[2].text = f"{decl.get('confidence', 0):.2f}"
+            row[3].text = status
+    else:
+        doc.add_paragraph("No declarations recorded.")
+
+    # 6. Compliance summary
+    doc.add_heading("6. Compliance Summary", level=1)
+    status = compliance_result.get("overall_status", "UNKNOWN")
+    status_par = doc.add_paragraph(f"Overall Status: {status}")
+    status_par.runs[0].bold = True
+    doc.add_paragraph(compliance_result.get("status_reason", ""))
+
+    # 7. Violations
+    doc.add_heading("7. Violations", level=1)
+    violations = compliance_result.get("violations", [])
+    if violations:
+        table = doc.add_table(rows=1, cols=5)
+        table.style = "Light Grid Accent 1"
+        for i, header in enumerate(["#", "Field", "Severity", "Issue", "Rule Reference"]):
+            table.rows[0].cells[i].text = header
+        for i, v in enumerate(violations, 1):
+            row = table.add_row().cells
+            row[0].text = str(i)
+            row[1].text = v.get("field", "N/A")
+            row[2].text = v.get("severity", "minor").upper()
+            row[3].text = v.get("issue_description", "N/A")
+            row[4].text = v.get("rule_key", "N/A")
+    else:
+        doc.add_paragraph("No violations detected.")
+
+    # 8. Evidence appendix (violation id + bbox coordinates)
+    doc.add_heading("8. Evidence Appendix", level=1)
+    if evidence_crops:
+        for ev in evidence_crops:
+            bbox = ev.get("bbox", {})
+            par = doc.add_paragraph(style="List Bullet")
+            par.add_run(f"Violation ID: {ev.get('violation_id', 'N/A')}  ")
+            par.add_run(
+                f"bbox: ({bbox.get('x1', 0)}, {bbox.get('y1', 0)})–"
+                f"({bbox.get('x2', 0)}, {bbox.get('y2', 0)})"
+            )
+            if ev.get("crop_storage_url"):
+                doc.add_paragraph(ev["crop_storage_url"])
+    else:
+        doc.add_paragraph("No evidence crops generated.")
+
+    # 9. Legal references
+    doc.add_heading("9. Legal References", level=1)
+    for ref in legal_references:
+        doc.add_paragraph(ref, style="List Bullet")
+
+    # 10. Confidence notes
+    doc.add_heading("10. Confidence Notes", level=1)
+    low_conf = [d for d in declarations if d.get("confidence", 1) < 0.5]
+    if low_conf:
+        for d in low_conf:
+            doc.add_paragraph(
+                f"{d.get('field_type', 'unknown')}: confidence {d.get('confidence', 0):.2f}",
+                style="List Bullet",
+            )
+    else:
+        doc.add_paragraph("All fields extracted with sufficient confidence.")
+
+    # 11. Inspector review
+    doc.add_heading("11. Inspector Review", level=1)
+    _add_key_value_table(doc, {
+        "Inspector ID": inspection_data.get("inspector_id", "N/A"),
+        "Review Status": inspection_data.get("status", "N/A"),
+    })
+
+    # 12. Audit info
+    doc.add_heading("12. Audit Information", level=1)
+    _add_key_value_table(doc, {
+        "Report Type": "DOCX export (editable)",
+        "Generated At": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "System": "Docket SIH26034 v1.0",
+    })
+
+    # Verification seal only for COMPLIANT per design.md §9
+    if compliance_result.get("overall_status") == "COMPLIANT":
+        seal = doc.add_paragraph()
+        run = seal.add_run(
+            "✓ This inspection has been verified as compliant with all applicable "
+            "Legal Metrology rules."
+        )
+        run.bold = True
+        run.font.color.rgb = _rgb(tokens["color_teal"])
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
 def _get_design_tokens() -> dict[str, str]:
     """Get design tokens for use in PDF template.
 
@@ -585,6 +781,54 @@ def _generate_report_html(
 </html>"""
 
 
+# ── Report scheduling ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+SCHEDULED_REPORTS: list[dict[str, Any]] = []
+
+
+def schedule_report(inspection_id: str, scheduled_time: datetime) -> str:
+    """Queue a report for asynchronous batch generation.
+
+    Registers the inspection in the scheduler with status 'scheduled'.
+    A worker calls process_scheduled_reports() periodically, then runs
+    generate_report_from_pipeline() for each due entry.
+    """
+    schedule_id = str(uuid.uuid4())
+    SCHEDULED_REPORTS.append({
+        "schedule_id": schedule_id,
+        "inspection_id": inspection_id,
+        "scheduled_time": scheduled_time.isoformat(),
+        "status": "scheduled",
+    })
+    return schedule_id
+
+
+def get_scheduled_reports() -> list[dict[str, Any]]:
+    """Return a snapshot of the scheduled-reports queue."""
+    return list(SCHEDULED_REPORTS)
+
+
+def process_scheduled_reports(now: Optional[datetime] = None) -> list[dict[str, Any]]:
+    """Mark due scheduled reports as ready for batch generation.
+
+    Transitions entries from 'scheduled' to 'done' once their
+    scheduled_time has passed, recording processed_at. The actual PDF/DOCX
+    generation is performed by the calling worker via
+    generate_report_from_pipeline() for each processed entry.
+    """
+    now = now or datetime.utcnow()
+    processed: list[dict[str, Any]] = []
+    for entry in SCHEDULED_REPORTS:
+        if entry["status"] != "scheduled":
+            continue
+        scheduled_at = datetime.fromisoformat(entry["scheduled_time"])
+        if scheduled_at <= now:
+            entry["status"] = "done"
+            entry["processed_at"] = now.isoformat()
+            processed.append(entry)
+    return processed
+
+
 # ── Convenience: generate from pipeline result ─────────────────────────────────
 
 def generate_report_from_pipeline(
@@ -651,10 +895,27 @@ def generate_report_from_pipeline(
         ],
     }
 
-    # Use placeholder image URLs (in production, fetch from DB/MinIO)
-    image_urls = ["https://example.com/placeholder.jpg"]
+    # Get image URLs from pipeline result
+    image_urls = []
+    if hasattr(pipeline_result, 'images') and pipeline_result.images:
+        for img in pipeline_result.images:
+            if hasattr(img, 'storage_url') and img.storage_url:
+                image_urls.append(img.storage_url)
 
+    # Get evidence crops from pipeline result
     evidence_crops = []
+    if hasattr(pipeline_result, 'evidence') and pipeline_result.evidence:
+        for ev in pipeline_result.evidence:
+            evidence_crops.append({
+                "violation_id": ev.violation_id if hasattr(ev, 'violation_id') else "N/A",
+                "crop_storage_url": ev.crop_storage_url if hasattr(ev, 'crop_storage_url') else "",
+                "bbox": {
+                    "x1": ev.bbox.x1 if hasattr(ev, 'bbox') and hasattr(ev.bbox, 'x1') else 0,
+                    "y1": ev.bbox.y1 if hasattr(ev, 'bbox') and hasattr(ev.bbox, 'y1') else 0,
+                    "x2": ev.bbox.x2 if hasattr(ev, 'bbox') and hasattr(ev.bbox, 'x2') else 0,
+                    "y2": ev.bbox.y2 if hasattr(ev, 'bbox') and hasattr(ev.bbox, 'y2') else 0,
+                },
+            })
 
     legal_refs = ["Legal Metrology (Packaged Commodities) Rules, 2011"]
 
