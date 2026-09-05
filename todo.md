@@ -1584,7 +1584,7 @@ Build the human review system: route low-confidence fields to mandatory review, 
 - prd.md §21 (POST /inspections/{id}/review)
 
 **Processing:**
-- [ ] Create `backend/app/services/review_queue.py` with:
+- [x] Create `backend/app/services/review_queue.py` with:
   - `get_review_items(inspection_id) -> list[ReviewItem]` function
   - Filter declarations/checks where confidence < threshold
   - `submit_correction(correction_data) -> Correction` function
@@ -1592,9 +1592,9 @@ Build the human review system: route low-confidence fields to mandatory review, 
   - Re-evaluate compliance using corrected value
   - Mark confidence as `human_confirmed`
   - Audit log entry for every correction (who, when, before/after, reason)
-- [ ] Implement POST /inspections/{id}/review endpoint
-- [ ] Enforce: reason field is required (non-empty) per Workflow D
-- [ ] Block report submission while any field remains NEEDS_REVIEW and unconfirmed
+- [x] Implement POST /inspections/{id}/review endpoint
+- [x] Enforce: reason field is required (non-empty) per Workflow D
+- [x] Block report submission while any field remains NEEDS_REVIEW and unconfirmed
 
 **Output:**
 - `backend/app/services/review_queue.py` (~100 lines)
@@ -1602,27 +1602,33 @@ Build the human review system: route low-confidence fields to mandatory review, 
 - Unit test: `backend/tests/test_review.py`
 
 **Verification Tasks:**
-1. GET review items for an inspection → returns only low-confidence items
-2. Submit correction with reason → creates correction row, updates verdict
-3. Submit correction without reason → returns 400
-4. Re-evaluated compliance reflects the corrected value
-5. Audit log has entry with before/after values and reason
-6. Attempt to submit report with unresolved NEEDS_REVIEW → returns 409
+1. [x] GET review items for an inspection → returns only low-confidence items — **PASS**
+2. [x] Submit correction with reason → creates correction row, updates verdict — **PASS**
+3. [x] Submit correction without reason → returns 400 — **PASS**
+4. [x] Re-evaluated compliance reflects the corrected value — **PASS**
+5. [x] Audit log has entry with before/after values and reason — **PASS**
+6. [x] Attempt to submit report with unresolved NEEDS_REVIEW → returns 409 — **PASS**
 
-**Regression Check:** Phase 6.1 tests still pass
+**Regression Check:** All 513 tests pass (0 regressions across all prior phases)
 
 **Git Instructions:**
 ```bash
-git add backend/app/services/review_queue.py backend/app/api/reviews.py backend/tests/test_review.py
+git add backend/app/services/review_queue.py backend/app/api/reviews.py backend/tests/test_review.py backend/app/models/inspection.py backend/app/models/product.py todo.md current_progress.md
 git commit -m "feat(review): human-in-the-loop review queue and correction workflow
 
 - Routes low-confidence fields to mandatory review per prd.md §19.1
 - Corrections stored as new rows, never overwrite originals per Workflow D
-- Mandatory reason field on every correction
+- Mandatory reason field on every correction (≥5 chars)
 - Re-evaluates compliance after correction
 - Audit logged with before/after values and reason
 - Blocks report submission with unresolved NEEDS_REVIEW per prd.md §17.2
+- RBAC: corrections require senior_officer+, confirm available for any authenticated user
+- Review queue summary KPIs for dashboard
+- Full suite 513 tests, 0 failures
 
+See: prd.md §19 (human-in-the-loop), prd.md §22 (queue management)
+"
+git push origin feature/phase-6-review-queue
 See: prd.md §19 (human-in-the-loop), Workflow D (corrections)
 "
 git push origin feature/phase-6-review
