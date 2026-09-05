@@ -129,15 +129,6 @@ No blockers encountered during Phase 0 execution.
 
 ---
 
-## Phase 6 Milestone Summary (COMPLETE)
-
-| Metric | Value |
-|---|---|
-| Total tests passing | **513/513** |
-| New tests added (Phase 6.2) | 26 |
-| Regressions | 0 |
-| Full suite runtime | ~3.8s |
-
 ---
 
 ## System Metric Snapshot (End of Phase 6)
@@ -158,7 +149,37 @@ No blockers encountered during Phase 0 execution.
 
 ---
 
-## Git Commit Log
+## Git Commit Log (Selected)
+```
+7ed370e docs(report): sync README, progress, and roadmap through Phase 8.2
+b6f0c4b docs(progress): sync progress log and README through Phase 8.2
+da6231f feat(frontend): login page, app shell, and dashboard wired to KPI APIs
+8328be6 feat(frontend): core Docket components, API client, and React Query hooks
+737c05f chore(project): full regression (540/540), README synced through Phase 7
+```
+
+---
+
+## Next Steps (Phase 8)
+
+### Subphase 8.1: Frontend Core ✅
+1. Wire React Query hooks (`useInspection`, `useAuth`) to backend endpoints in `frontend/src/pages/`
+2. Verify frontend compliance with design system tokens (`frontend/src/styles/tokens.css`)
+3. Implement core components per design.md §7: `LedgerRow.tsx`, `MeasureRule.tsx`, `EvidenceCard.tsx`
+
+### Phase 7 Milestone: COMPLETE (2026-09-05)
+Gate PASSED — 27/27 gate tests, PDF render 817ms (<10s target), full suite 540/540.
+
+### Subphase 8.2: Authentication & Navigation Pages ✅
+1. LoginPage per design.md §8.1, in-memory JWT auth
+2. App shell Layout (sidebar + bottom nav) per design.md §8
+3. DashboardPage wired to KPI APIs per prd.md §23
+4. RequireAuth routing per design.md §8
+
+### Subphase 8.3: Core Workflow Pages (IN PROGRESS)
+1. Image Capture page with camera per design.md §8.3
+2. Processing Screen, Extracted Info, Compliance Results per design.md §8.4–8.6
+3. Wiring to backend pipeline and inspection detail APIs
 
 ```
 Initial commit: Phase 0 scaffolding
