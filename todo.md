@@ -1180,9 +1180,9 @@ pytest backend/tests/test_classification.py backend/tests/test_font_analysis.py 
 **Design System Reference:** design.md §11 Voice (rule terms), design.md §8.10 (Rule Management page)
 **Tech Stack Reference:** tech-stack.md §5 (Postgres JSONB), tech-stack.md §13 (Postgres pin)
 
----
+---### Subphase 5.1: Rule Engine Core (COMPLETE)
 
-### Subphase 5.1: Rule Engine Core
+ (COMPLETE)
 
 #### Task 5.1.1: Implement the rule engine evaluator
 

@@ -309,7 +309,7 @@ backend/
 | Phase 5.3 | ✅ Complete | 44 | Pipeline integration, evidence engine, PDF reports |
 | Phase 6 | ✅ Complete | 26 | Evidence engine + human review queue |
 | Phase 7 | ✅ Complete | 27 | PDF/DOCX reports + dashboard & analytics |
-| Phase 8 | ⏳ Pending | — | Frontend UI |
+| Phase 8 | ⏳ In progress (8.1–8.2 done) | 27 | Core components, auth UI, dashboard shell |
 | Phase 9 | ⏳ Pending | — | Hardening & release |
 
 ---

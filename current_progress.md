@@ -2,12 +2,12 @@
 
 **Last Updated (UTC):** 2026-09-05 08:00
 **Current Phase:** Phase 8: Frontend UI Implementation (IN PROGRESS)
-**Current Subphase:** Subphase 8.2: Authentication & Navigation Pages (COMPLETE)
-**Current Task:** Next → Subphase 8.3 (Core Workflow Pages) — Backend 540/540, Frontend 27/27
+**Current Subphase:** Subphase 8.3: Core Workflow Pages (IN PROGRESS)
+**Current Task:** Task 8.3.2 — Processing Screen, Extracted Info, Compliance Results — Backend 540/540, Frontend 27/27
 
 ---
 
-## Full Test Suite Results (2026-09-05 02:00 UTC)
+## Full Test Suite Results (2026-09-05 08:20 UTC)
 
 | Test File | Tests | Status |
 |---|---|---|
@@ -185,3 +185,5 @@ Gate PASSED — 27/27 gate tests, PDF render 817ms (<10s target), full suite 540
 1. Initialize/verify React + Vite + TypeScript structure per todo.md Phase 8 (design.md §12 tokens)
 2. Wire React Query hooks (`useInspection`, `useAuth`) to backend endpoints
 3. Implement core components per design.md §7: `LedgerRow.tsx`, `MeasureRule.tsx`, `EvidenceCard.tsx`
+4. Subphase 8.2 complete: LoginPage, app shell Layout, DashboardPage wired to KPI APIs
+5. Subphase 8.3 IN PROGRESS: Image Capture, Processing Screen, Extracted Info, Compliance Results
