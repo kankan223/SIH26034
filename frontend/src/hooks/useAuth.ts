@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   apiClient,
-  REFRESH_TOKEN_KEY,
-  TOKEN_KEY,
+  clearAuthTokens,
+  getAuthToken,
+  setAuthTokens,
   type LoginResponse,
 } from '../api/client'
 
@@ -14,8 +15,9 @@ export interface LoginCredentials {
 /**
  * useLogin — POST /auth/login per prd.md §21.
  *
- * On success stores the access + refresh tokens (prd.md §25.2) and
- * invalidates cached queries so the UI reflects the authenticated user.
+ * On success stores the access + refresh tokens **in memory** (todo.md
+ * Task 8.2.1, verification #5) and invalidates cached queries so the UI
+ * reflects the authenticated user.
  */
 export function useLogin() {
   const queryClient = useQueryClient()
@@ -23,8 +25,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
       const { data } = await apiClient.post<LoginResponse>('/auth/login', credentials)
-      localStorage.setItem(TOKEN_KEY, data.access_token)
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
+      setAuthTokens(data.access_token, data.refresh_token)
       return data
     },
     onSuccess: () => {
@@ -33,18 +34,17 @@ export function useLogin() {
   })
 }
 
-/** useLogout — clears stored credentials and all cached queries. */
+/** useLogout — clears in-memory credentials and all cached queries. */
 export function useLogout() {
   const queryClient = useQueryClient()
 
   return () => {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
+    clearAuthTokens()
     queryClient.clear()
   }
 }
 
-/** useAuthToken — current access token, if any. */
+/** useAuthToken — current in-memory access token, if any. */
 export function useAuthToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  return getAuthToken()
 }

@@ -14,6 +14,43 @@ export interface InspectionListResponse {
   page_size: number
 }
 
+// Dashboard response shapes mirror backend/app/schemas/dashboard.py (prd.md §23)
+
+export interface KpiObject {
+  total_inspections: number
+  compliant_count: number
+  non_compliant_count: number
+  flagged_for_review_count: number
+  pending_review_count: number
+  active_violations_count: number
+  compliance_rate_percent: number
+  total_products_categorized: number
+  top_category: string | null
+}
+
+export interface TrendPoint {
+  month: string
+  inspection_count: number
+  compliant_count: number
+  compliance_rate_percent: number
+}
+
+export interface TrendResponse {
+  trends: TrendPoint[]
+  total_months: number
+}
+
+export interface CategoryViolation {
+  category: string
+  violation_count: number
+  compliance_rate_percent: number
+}
+
+export interface CategoryResponse {
+  categories: CategoryViolation[]
+  total_violations: number
+}
+
 /**
  * useInspections — GET /inspections per prd.md §21.
  * Accepts query filters (status, region, date_from, date_to, page).
@@ -60,8 +97,32 @@ export function useDashboardKpis() {
   return useQuery({
     queryKey: ['dashboard', 'kpis'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/dashboard/kpis')
+      const { data } = await apiClient.get<KpiObject>('/dashboard/kpis')
       return data
     },
+  })
+}
+
+/** useDashboardTrends — GET /dashboard/trends (admin per prd.md §21). */
+export function useDashboardTrends() {
+  return useQuery({
+    queryKey: ['dashboard', 'trends'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<TrendResponse>('/dashboard/trends')
+      return data
+    },
+    retry: false,
+  })
+}
+
+/** useDashboardCategories — GET /dashboard/categories (admin per prd.md §21). */
+export function useDashboardCategories() {
+  return useQuery({
+    queryKey: ['dashboard', 'categories'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<CategoryResponse>('/dashboard/categories')
+      return data
+    },
+    retry: false,
   })
 }

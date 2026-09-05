@@ -1984,18 +1984,18 @@ Build the Login page per design.md §8.1 and the auth state management (useAuth 
 - prd.md §21 (POST /auth/login contract)
 
 **Processing:**
-- [ ] Create `frontend/src/pages/LoginPage.tsx`:
+- [x] Create `frontend/src/pages/LoginPage.tsx`:
   - "Docket" headline in Source Serif 4 display-xl (56px)
   - "Legal Metrology Compliance" subtitle
   - Email and password fields with Plex Sans labels above inputs (never placeholder-as-label per design.md §7.6)
   - "Sign in" primary button per design.md §7.2
   - Measure Rule runs full left edge, unlabeled per design.md §8.1
   - Error state: inline error message below form
-- [ ] Create `frontend/src/hooks/useAuth.ts`:
+- [x] Create `frontend/src/hooks/useAuth.ts`:
   - Store JWT in memory (not localStorage per security best practice)
   - Login/logout functions
   - Token refresh logic
-- [ ] Create `frontend/src/api/client.ts`:
+- [x] Create `frontend/src/api/client.ts`:
   - Axios instance with auth interceptor
   - Base URL from VITE_API_BASE_URL
   - Automatic 401 handling (redirect to login)
@@ -2006,14 +2006,50 @@ Build the Login page per design.md §8.1 and the auth state management (useAuth 
 - `frontend/src/api/client.ts`
 
 **Verification Tasks:**
-1. Login page renders with "Docket" headline and form
-2. Measure Rule visible on left edge
-3. Submit with valid credentials → redirects to Dashboard
-4. Submit with invalid credentials → shows inline error
-5. JWT stored in memory, not localStorage
-6. Axios interceptor adds Authorization header to requests
+1. [x] Login page renders with "Docket" headline and form — **PASS**
+2. [x] Measure Rule visible on left edge — **PASS**
+3. [x] Submit with valid credentials → redirects to Dashboard — **PASS** (navigate called with /dashboard)
+4. [x] Submit with invalid credentials → shows inline error — **PASS** (role=alert with FastAPI detail)
+5. [x] JWT stored in memory, not localStorage — **PASS** (module-level store; getAuthToken/clearAuthTokens)
+6. [x] Axios interceptor adds Authorization header to requests — **PASS** (Bearer from in-memory token)
 
-**Regression Check:** Phase 8.1 tests still pass
+**Regression Check:** Phase 8.1 tests still pass — **PASS** (27/27 frontend, 540/540 backend)
+
+---
+
+#### Task 8.2.2: App shell layout and dashboard page
+
+**Description:**
+Build the application shell (sidebar/bottom-nav layout) and the Dashboard page wired to the Phase 7 KPI endpoints per design.md §8.2.
+
+**Input Required:**
+- design.md §8 (page layouts, ledger-style alignment)
+- design.md §8.2 (Dashboard wireframe: 4 KPI figure blocks, violation categories, recent inspections ledger)
+- prd.md §21 (GET /dashboard/kpis, /trends, /categories)
+
+**Processing:**
+- [x] Create `frontend/src/components/Layout.tsx`: desktop sidebar + mobile bottom nav, ledger styling, Docket wordmark, logout
+- [x] Create `frontend/src/pages/DashboardPage.tsx`:
+  - Four KPI figure blocks (Inspected, Compliance rate, Violations, Review queue) from GET /dashboard/kpis
+  - Violation categories ledger from GET /dashboard/categories (403 → "requires senior officer" note)
+  - Trends summary from GET /dashboard/trends (admin-gated)
+  - Recent inspections ledger with ComplianceStatusBadge per §8.2
+  - Measure Rule ticks colored by recent inspection verdicts per §6
+- [x] Wire routes in `frontend/src/App.tsx`: /login public, /dashboard behind RequireAuth, / → redirect
+- [x] Add `useDashboardTrends` / `useDashboardCategories` hooks with typed API responses
+
+**Output:**
+- `frontend/src/components/Layout.tsx`, `frontend/src/pages/DashboardPage.tsx`, updated `frontend/src/App.tsx` — **CREATED**
+
+**Verification Tasks:**
+1. [x] Login redirects to Dashboard after auth — **PASS**
+2. [x] Dashboard renders 4 KPI figure blocks — **PASS**
+3. [x] Violation categories render from live endpoint — **PASS**
+4. [x] Recent inspections render as ledger rows with status badges — **PASS**
+5. [x] RequireAuth blocks unauthenticated access to /dashboard — **PASS**
+6. [x] `npx tsc --noEmit` 0 errors; vitest 27/27; build OK; backend 540/540 — **PASS**
+
+**Regression Check:** Phase 8.2.1 tests still pass
 
 **Git Instructions:**
 ```bash

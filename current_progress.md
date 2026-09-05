@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-05 07:00
+**Last Updated (UTC):** 2026-09-05 08:00
 **Current Phase:** Phase 8: Frontend UI Implementation (IN PROGRESS)
-**Current Subphase:** Subphase 8.1: Core Design System Components + API Hooks (COMPLETE)
-**Current Task:** Next → Subphase 8.2 (Authentication & Navigation Pages) — Backend 540/540, Frontend 18/18
+**Current Subphase:** Subphase 8.2: Authentication & Navigation Pages (COMPLETE)
+**Current Task:** Next → Subphase 8.3 (Core Workflow Pages) — Backend 540/540, Frontend 27/27
 
 ---
 
@@ -45,15 +45,17 @@
 | PHASE 8: Frontend UI Implementation (IN PROGRESS)              |
 | SUBPHASE 8.1: Core Design System Components + API Hooks        |
 | TASK 8.1.1: Design token system + global styles (COMPLETE)     |
-| TASK 8.1.2: LedgerRow, MeasureRule, StatusBadge, EvidenceCard  |
-|             + api client + React Query hooks (COMPLETE)        |
+| TASK 8.1.2: Core components + api client + hooks (COMPLETE)    |
+| SUBPHASE 8.2: Authentication & Navigation Pages (COMPLETE)     |
+| TASK 8.2.1: Login page + in-memory auth state (COMPLETE)       |
+| TASK 8.2.2: App shell layout + Dashboard page (COMPLETE)       |
 |                                                                |
-| Frontend: tsc 0 errors, vitest 18/18, build OK                 |
+| Frontend: tsc 0 errors, vitest 27/27, build OK                 |
 | Backend: 540/540 tests passing (no regressions)                |
 |                                                                |
-| NEXT: SUBPHASE 8.2 — Auth & Navigation Pages                   |
+| NEXT: SUBPHASE 8.3 — Core Workflow Pages                       |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-05 07:00 UTC                                 |
+| Completed: 2026-09-05 08:00 UTC                                 |
 +---------------------------------------------------------------+
 ```
 
@@ -116,6 +118,7 @@
 | 2026-09-05 05:00 | PHASE 7 | Phase 7 Milestone Verification Gate PASSED — Phase 7 complete | todo.md, current_progress.md | VERIFIED | Gate 27/27 in 2.5s; PDF render 817ms (<10s target per prd.md §9); full suite 540/540 in 57.4s, 0 failures | No blockers. Phase 7 complete: PDF + DOCX reports, evidence thumbnails, report scheduling, dashboard KPIs/trends/categories with RBAC. Next: Phase 8 (Frontend UI). | AI Agent |
 | 2026-09-05 06:00 | CHORE | Full regression + README sync: 540/540 tests passing, README updated through Phase 7 (features, test table, roadmap, structure) | README.md, current_progress.md | VERIFIED | Full suite 540/540 in 55.9s, 0 failures | README now reflects phases 0–7 complete; backend structure tree corrected (api/ flattened, tasks/ + Phase 5.3–7 services added) | AI Agent |
 | 2026-09-05 07:00 | 8.1 | Subphase 8.1 COMPLETE: design tokens verified, 4 core components, Axios client + JWT interceptor, React Query hooks (useAuth, useInspection), 18 component tests | frontend/src/components/{LedgerRow,MeasureRule,ComplianceStatusBadge,EvidenceCard}.tsx, frontend/src/api/client.ts, frontend/src/hooks/{useAuth,useInspection}.ts, frontend/src/components/__tests__/*.test.tsx, frontend/src/styles/globals.css, frontend/vite.config.ts, frontend/package.json, frontend/tsconfig.json | VERIFIED | tsc 0 errors; vitest 18/18 in 6.6s; build OK; backend 540/540 in 54.3s, 0 regressions | Installed @types/react, @types/react-dom, jsdom; vitest test config added; bbox stroke-draw keyframes per design.md §5 | AI Agent |
+| 2026-09-05 08:00 | 8.2 | Subphase 8.2 COMPLETE: LoginPage (design.md §8.1), in-memory JWT auth, App shell Layout (sidebar + bottom nav), DashboardPage wired to /dashboard/kpis + /trends + /categories, RequireAuth routing, 9 new tests | frontend/src/pages/LoginPage.tsx, frontend/src/pages/DashboardPage.tsx, frontend/src/components/Layout.tsx, frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/hooks/{useAuth,useInspection}.ts, frontend/src/pages/__tests__/*.test.tsx, frontend/src/components/__tests__/Layout.test.tsx | VERIFIED | tsc 0 errors; vitest 27/27 in 11.2s; build OK; backend 540/540 in 56.0s, 0 regressions | Refactored token storage to in-memory per todo.md 8.2.1 verification #5 (JWT never in localStorage); 401 interceptor redirects to /login; trends/categories hooks admin-gated with 403 notes | AI Agent |
 
 ---
 
