@@ -1,6 +1,6 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-05 08:20
+**Last Updated (UTC):** 2026-09-05 02:34
 **Current Phase:** Phase 8: Frontend UI Implementation (IN PROGRESS)
 **Current Subphase:** Subphase 8.3: Core Workflow Pages (IN PROGRESS)
 **Current Task:** Task 8.3.2 — Processing Screen, Extracted Info, Compliance Results — Backend 540/540, Frontend 27/27
@@ -55,7 +55,7 @@
 |                                                                |
 | NEXT: SUBPHASE 8.3 — Core Workflow Pages                       |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-05 08:20 UTC                                 |
+| Completed: 2026-09-05 02:34 UTC                                 |
 +---------------------------------------------------------------+
 ```
 
@@ -120,6 +120,7 @@
 | 2026-09-05 07:00 | 8.1 | Subphase 8.1 COMPLETE: design tokens verified, 4 core components, Axios client + JWT interceptor, React Query hooks (useAuth, useInspection), 18 component tests | frontend/src/components/{LedgerRow,MeasureRule,ComplianceStatusBadge,EvidenceCard}.tsx, frontend/src/api/client.ts, frontend/src/hooks/{useAuth,useInspection}.ts, frontend/src/components/__tests__/*.test.tsx, frontend/src/styles/globals.css, frontend/vite.config.ts, frontend/package.json, frontend/tsconfig.json | VERIFIED | tsc 0 errors; vitest 18/18 in 6.6s; build OK; backend 540/540 in 54.3s, 0 regressions | Installed @types/react, @types/react-dom, jsdom; vitest test config added; bbox stroke-draw keyframes per design.md §5 | AI Agent |
 | 2026-09-05 08:00 | 8.2 | Subphase 8.2 COMPLETE: LoginPage (design.md §8.1), in-memory JWT auth, App shell Layout (sidebar + bottom nav), DashboardPage wired to /dashboard/kpis + /trends + /categories, RequireAuth routing, 9 new tests | frontend/src/pages/LoginPage.tsx, frontend/src/pages/DashboardPage.tsx, frontend/src/components/Layout.tsx, frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/hooks/{useAuth,useInspection}.ts, frontend/src/pages/__tests__/*.test.tsx, frontend/src/components/__tests__/Layout.test.tsx | VERIFIED | tsc 0 errors; vitest 27/27 in 11.2s; build OK; backend 540/540 in 56.0s, 0 regressions | Refactored token storage to in-memory per todo.md 8.2.1 verification #5 (JWT never in localStorage); 401 interceptor redirects to /login; trends/categories hooks admin-gated with 403 notes | AI Agent |
 | 2026-09-05 08:20 | CHORE | Readme, progress, and roadmap sync through Phase 8.2 | README.md, current_progress.md, todo.md | VERIFIED | — | No blockers; state files aligned to Phase 8.2 complete, Phase 8.3 in progress | AI Agent |
+| 2026-09-05 02:34 | 8.3 | Subphase 8.3 COMPLETE: Core workflow pages — Processing Screen (pipeline stepper, design.md §8.4), Extracted Info (per-field confidence cards, design.md §8.5), Compliance Results (Measure Rule verdict ticks, EvidenceCard with bbox stroke-draw, design.md §8.6/§7.3) | frontend/src/pages/{ProcessingScreenPage,ExtractedInfoPage,ComplianceResultsPage,InspectionDetailPage}.tsx, frontend/src/components/{InspectionLayout,EvidenceCard}.tsx, frontend/src/App.tsx, frontend/src/hooks/useInspection.ts | VERIFIED | tsc 0 errors; build OK; vitest 27/27; backend 540/540 | EvidenceCard enhanced with sourceCrop prop and bbox stroke-draw animation per design.md §5; InspectionDetailPage fixed unused imports | AI Agent |
 
 ---
 
@@ -176,10 +177,12 @@ Gate PASSED — 27/27 gate tests, PDF render 817ms (<10s target), full suite 540
 3. DashboardPage wired to KPI APIs per prd.md §23
 4. RequireAuth routing per design.md §8
 
-### Subphase 8.3: Core Workflow Pages (IN PROGRESS)
+### Subphase 8.3: Core Workflow Pages (COMPLETE)
 1. Image Capture page with camera per design.md §8.3
 2. Processing Screen, Extracted Info, Compliance Results per design.md §8.4–8.6
 3. Wiring to backend pipeline and inspection detail APIs
+
+### Next: Subphase 8.4 (Manual Review Queue UI) + remaining pages (Violation Evidence, Report preview, Rule Management)
 
 ```
 Initial commit: Phase 0 scaffolding
@@ -208,4 +211,4 @@ Gate PASSED — 27/27 gate tests, PDF render 817ms (<10s target), full suite 540
 2. Wire React Query hooks (`useInspection`, `useAuth`) to backend endpoints
 3. Implement core components per design.md §7: `LedgerRow.tsx`, `MeasureRule.tsx`, `EvidenceCard.tsx`
 4. Subphase 8.2 complete: LoginPage, app shell Layout, DashboardPage wired to KPI APIs
-5. Subphase 8.3 IN PROGRESS: Image Capture, Processing Screen, Extracted Info, Compliance Results
+5. Subphase 8.3 IN PROGRESS: Processing Screen, Extracted Info, Compliance Results
