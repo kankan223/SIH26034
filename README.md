@@ -132,6 +132,12 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 | GET | `/api/v1/rules` | admin | List rules |
 | POST | `/api/v1/rules/{id}/versions` | admin | Add rule version |
 | POST | `/api/v1/rules/{id}/versions/{vid}/publish` | admin | Publish rule version |
+| GET | `/api/v1/dashboard/kpis` | inspector+ | Dashboard KPIs (Phase 7.2) |
+| GET | `/api/v1/dashboard/trends` | admin | Monthly trends (Phase 7.2) |
+| GET | `/api/v1/dashboard/categories` | admin | Category breakdown (Phase 7.2) |
+| GET | `/api/v1/reviews/queue` | senior_officer+ | Review queue (Phase 6.2) |
+| POST | `/api/v1/reviews/{id}/confirm` | any auth | Confirm review item (Phase 6.2) |
+| POST | `/api/v1/reviews/{id}/override` | senior_officer+ | Override/correct review (Phase 6.2) |
 | GET | `/health` | None | Health check |
 
 ---
@@ -169,7 +175,7 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 pytest tests/ -v
 
-# Frontend (when implemented)
+# Frontend (Phase 8)
 cd frontend
 npm install
 npm test
@@ -204,6 +210,8 @@ backend/
 │   │   ├── compliance_engine.py   # 5-state compliance decision engine (Phase 5.2)
 │   │   ├── api/
 │   │   │   ├── rules.py           # Rule CRUD + versioning + publish (Phase 5.2)
+│   │   │   ├── dashboard.py       # Dashboard KPIs, trends, categories (Phase 7.2)
+│   │   │   ├── reviews.py         # Review queue, corrections (Phase 6.2)
 │   │   │   └── ...                # auth.py, inspections.py, audit.py
 │   ├── models/                    # 15 SQLAlchemy models
 │   ├── schemas/                   # Pydantic request/response models
@@ -271,8 +279,8 @@ backend/
 | Phase 5.1 | ✅ Complete | 58 | Rule engine evaluator |
 | Phase 5.2 | ✅ Complete | 58 | Rule CRUD API + Compliance Decision Engine |
 | Phase 5.3 | ⏳ Pending | — | Compliance checking service integration |
-| Phase 6 | ⏳ Pending | — | Evidence & human review |
-| Phase 7 | ⏳ Pending | — | Reports & dashboard |
+| Phase 6 | ✅ Complete | 26 | Evidence engine + human review queue |
+| Phase 7 | ✅ Complete | 17 | Reports, dashboard & analytics |
 | Phase 8 | ⏳ Pending | — | Frontend UI |
 | Phase 9 | ⏳ Pending | — | Hardening & release |
 
