@@ -48,7 +48,7 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 
 ---
 
-## Implemented Features (Phase 0–5.2)
+## Implemented Features (Phase 0–7)
 
 ### Phase 0: Infrastructure ✅
 - Docker Compose with 6 services (backend, worker, frontend, postgres, redis, minio)
@@ -114,6 +114,24 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
   MINOR (other violations)
 - **Per-field compliance** — Each field tracked with rule_version_id reference
 
+### Phase 5.3: Pipeline Integration & Evidence Engine ✅
+- **9-stage analysis pipeline** — image → quality → detection → OCR → extraction → classification → rules → compliance → evidence
+- **Evidence engine** — Bounding-box crops stored to MinIO (`lm-evidence`), immutable evidence rows
+- **PDF report generator** — 12-section report with verification seal on COMPLIANT only
+
+### Phase 6: Evidence & Human Review ✅
+- **Review queue** — Routes NEEDS_HUMAN_REVIEW / INSUFFICIENT_EVIDENCE items by region & severity
+- **Correction workflow** — Mandatory reason (≥5 chars), stored as new rows (originals never overwritten)
+- **Audit trail** — Every review decision and correction logged with before/after values
+- **Report submission gate** — Blocks submission while any field is unresolved NEEDS_REVIEW
+
+### Phase 7: Reports & Dashboard ✅
+- **PDF reports** — Evidence crops embedded with bounding box coordinates, 12 sections per prd.md §24.1
+- **DOCX export** — Editable 12-section Word export alongside PDF per prd.md §24.2
+- **Report scheduling** — In-memory queue for asynchronous batch generation
+- **Verification seal** — COMPLIANT exports only, per design.md §9
+- **Dashboard KPIs** — GET /dashboard/kpis, /trends, /categories with RBAC + audit logging
+
 ---
 
 ## API Endpoints
@@ -169,7 +187,7 @@ curl http://localhost:8000/health
 ### Running Tests
 
 ```bash
-# Backend tests (443 tests)
+# Backend tests (540 tests)
 cd backend
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
@@ -195,7 +213,11 @@ backend/
 │   ├── api/
 │   │   ├── auth.py                # POST /auth/login, /auth/refresh
 │   │   ├── inspections.py         # Inspection CRUD + image upload
-│   │   └── audit.py              # GET /audit-logs (admin-only)
+│   │   ├── audit.py               # GET /audit-logs (admin-only)
+│   │   ├── rules.py               # Rule CRUD + versioning + publish (Phase 5.2)
+│   │   ├── reviews.py             # Review queue, corrections (Phase 6.2)
+│   │   ├── dashboard.py           # Dashboard KPIs, trends, categories (Phase 7.2)
+│   │   └── reports.py             # Report retrieval (Phase 7)
 │   ├── services/
 │   │   ├── image_processing.py    # Quality gate (blur, exposure, resolution)
 │   │   ├── cv_detection.py        # YOLOv8n package/label detection
@@ -208,19 +230,21 @@ backend/
 │   │   ├── font_analysis.py       # Relative-proxy font size estimation
 │   │   ├── rule_engine.py         # Deterministic rule evaluator (Phase 5.1)
 │   │   ├── compliance_engine.py   # 5-state compliance decision engine (Phase 5.2)
-│   │   ├── api/
-│   │   │   ├── rules.py           # Rule CRUD + versioning + publish (Phase 5.2)
-│   │   │   ├── dashboard.py       # Dashboard KPIs, trends, categories (Phase 7.2)
-│   │   │   ├── reviews.py         # Review queue, corrections (Phase 6.2)
-│   │   │   └── ...                # auth.py, inspections.py, audit.py
+│   │   ├── review_queue.py        # Review routing, corrections (Phase 6.2)
+│   │   ├── evidence_engine.py     # Bounding-box evidence crops (Phase 5.3)
+│   │   ├── report_generator.py    # PDF + DOCX reports, scheduling (Phase 7)
+│   │   └── pipeline.py            # 9-stage analysis orchestration (Phase 5.3)
+│   ├── tasks/
+│   │   └── pipeline.py            # Async analysis pipeline worker (Phase 5.3)
 │   ├── models/                    # 15 SQLAlchemy models
 │   ├── schemas/                   # Pydantic request/response models
 │   │   ├── rule.py                # Rule CRUD request/response schemas (Phase 5.2)
+│   │   ├── dashboard.py           # Dashboard KPI/trend/category schemas (Phase 7.2)
 │   └── middleware/
 │       └── audit.py               # Audit middleware for mutating ops
 ├── alembic/                       # Database migrations
 ├── scripts/                       # Seed data scripts
-├── tests/                         # 443 unit tests
+├── tests/                         # 540 unit tests
 ├── requirements.txt               # Production dependencies
 ├── requirements-dev.txt           # Dev/test dependencies
 └── Dockerfile                     # Python 3.14-slim
@@ -243,7 +267,11 @@ backend/
 | `test_font_analysis.py` | 29 | Font size estimation, confidence scoring |
 | `test_rule_engine.py` | 58 | Rule evaluation, versioning, all validation types |
 | `test_rules_api.py` | 58 | Rule CRUD schemas, compliance engine, decision matrix |
-| **Total** | **443** | **All passing** |
+| `test_pipeline.py` | 44 | 9-stage pipeline, evidence engine, PDF report |
+| `test_review.py` | 26 | Review queue, corrections, confirmations |
+| `test_dashboard.py` | 17 | Dashboard KPIs, trends, categories, RBAC |
+| `test_report_generator.py` | 10 | PDF sections, DOCX export, scheduling |
+| **Total** | **540** | **All passing** |
 
 ---
 
@@ -278,9 +306,9 @@ backend/
 | Phase 4 | ✅ Complete | 62 | Classification + font analysis |
 | Phase 5.1 | ✅ Complete | 58 | Rule engine evaluator |
 | Phase 5.2 | ✅ Complete | 58 | Rule CRUD API + Compliance Decision Engine |
-| Phase 5.3 | ⏳ Pending | — | Compliance checking service integration |
+| Phase 5.3 | ✅ Complete | 44 | Pipeline integration, evidence engine, PDF reports |
 | Phase 6 | ✅ Complete | 26 | Evidence engine + human review queue |
-| Phase 7 | ✅ Complete | 17 | Reports, dashboard & analytics |
+| Phase 7 | ✅ Complete | 27 | PDF/DOCX reports + dashboard & analytics |
 | Phase 8 | ⏳ Pending | — | Frontend UI |
 | Phase 9 | ⏳ Pending | — | Hardening & release |
 
