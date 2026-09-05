@@ -163,24 +163,27 @@ da6231f feat(frontend): login page, app shell, and dashboard wired to KPI APIs
 
 ## Next Steps (Phase 8)
 
-### Subphase 8.1: Frontend Core ✅
-1. Wire React Query hooks (`useInspection`, `useAuth`) to backend endpoints in `frontend/src/pages/`
-2. Verify frontend compliance with design system tokens (`frontend/src/styles/tokens.css`)
-3. Implement core components per design.md §7: `LedgerRow.tsx`, `MeasureRule.tsx`, `EvidenceCard.tsx`
+### Subphase 8.1: Frontend Core ✅ (2026-09-05 07:00)
+1. Design tokens verified, 4 core components (LedgerRow, MeasureRule, ComplianceStatusBadge, EvidenceCard)
+2. Axios client + JWT interceptor, React Query hooks (useAuth, useInspection)
+3. tsc 0 errors; vitest 18/18; build OK; backend 540/540
 
-### Phase 7 Milestone: COMPLETE (2026-09-05)
-Gate PASSED — 27/27 gate tests, PDF render 817ms (<10s target), full suite 540/540.
-
-### Subphase 8.2: Authentication & Navigation Pages ✅
+### Subphase 8.2: Authentication & Navigation Pages ✅ (2026-09-05 08:00)
 1. LoginPage per design.md §8.1, in-memory JWT auth
 2. App shell Layout (sidebar + bottom nav) per design.md §8
 3. DashboardPage wired to KPI APIs per prd.md §23
 4. RequireAuth routing per design.md §8
+5. tsc 0 errors; vitest 27/27 (9 new); build OK; backend 540/540
 
-### Subphase 8.3: Core Workflow Pages (COMPLETE)
-1. Image Capture page with camera per design.md §8.3
-2. Processing Screen, Extracted Info, Compliance Results per design.md §8.4–8.6
-3. Wiring to backend pipeline and inspection detail APIs
+### Subphase 8.3: Core Workflow Pages ✅ (2026-09-05 02:34)
+1. Processing Screen with numbered pipeline stepper per design.md §8.4
+2. Extracted Information page with per-field confidence cards per design.md §8.5
+3. Compliance Results page with Measure Rule verdict-colored ticks per design.md §8.6/§6
+4. InspectionLayout component with Measure Rule left-edge per design.md §6
+5. Routes wired in App.tsx with RequireAuth per design.md §8
+6. tsc 0 errors; build OK; vitest 27/27; backend 540/540
+
+### Next: Subphase 8.4 (Manual Review Queue UI) + remaining pages (Violation Evidence, Report preview, Rule Management)
 
 ### Next: Subphase 8.4 (Manual Review Queue UI) + remaining pages (Violation Evidence, Report preview, Rule Management)
 
