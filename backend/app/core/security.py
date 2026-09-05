@@ -55,3 +55,10 @@ def verify_token(token: str) -> dict:
         return payload
     except JWTError:
         raise
+
+# Runtime check: printed once per worker startup (not user-telemetry, just dev sanity).
+if __name__ == "__main__":
+    import os
+    from app.core.config import settings
+    pw = hash_password("test")
+    print(f"bcrypt cost check: {pw[:7]} (starts with $2b$12 -> {pw.startswith('$2b$12')})")
