@@ -228,7 +228,7 @@ async def confirm_review(
     return result
 
 
-@router.post("/{review_id}/override", response_model=CORRECTION_RESPONSE)
+@router.post("/{review_id}/override", response_model=CorrectionResponse)
 async def override_review(
     review_id: str,
     request: CorrectionRequest,

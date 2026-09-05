@@ -40,10 +40,14 @@ app.add_middleware(AuditMiddleware)
 from app.api.auth import router as auth_router
 from app.api.inspections import router as inspections_router
 from app.api.audit import router as audit_router
+from app.api.dashboard import dashboard_router
+from app.api.reviews import router as reviews_router
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(inspections_router, prefix="/api/v1")
 app.include_router(audit_router, prefix="/api/v1")
+app.include_router(dashboard_router)
+app.include_router(reviews_router)
 
 
 @app.get("/health")
