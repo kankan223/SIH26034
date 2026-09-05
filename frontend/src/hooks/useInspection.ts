@@ -14,6 +14,31 @@ export interface InspectionListResponse {
   page_size: number
 }
 
+// Detail envelope matches backend inspection endpoint + compliance shape
+// (backend/app/services/compliance_engine.py — ComplianceResult / ViolationRecord)
+
+export interface InspectionDetail extends Inspection {
+  overall_status?: 'COMPLIANT' | 'NON_COMPLIANT' | 'PARTIALLY_COMPLIANT' | 'NEEDS_HUMAN_REVIEW' | 'INSUFFICIENT_EVIDENCE'
+  status_reason?: string
+  compliance?: {
+    per_field_compliance?: Array<{
+      field_type: string
+      status: string
+      rule_version_id: string
+      confidence: number
+      detail: string
+    }>
+    violations?: Array<{
+      field: string
+      severity: 'critical' | 'major' | 'minor'
+      rule_version_id: string
+      rule_key: string
+      issue_description: string
+      expected_condition?: string
+    }>
+  }
+}
+
 // Dashboard response shapes mirror backend/app/schemas/dashboard.py (prd.md §23)
 
 export interface KpiObject {
@@ -71,7 +96,7 @@ export function useInspection(id: string | undefined) {
     queryKey: ['inspections', id],
     enabled: Boolean(id),
     queryFn: async () => {
-      const { data } = await apiClient.get<Inspection>(`/inspections/${id}`)
+      const { data } = await apiClient.get<InspectionDetail>(`/inspections/${id}`)
       return data
     },
   })

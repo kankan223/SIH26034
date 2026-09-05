@@ -18,6 +18,8 @@ interface EvidenceCardProps {
   imageUrl?: string
   /** Bounding box in pixels; normalised using imageWidth/imageHeight. */
   bbox?: BBox
+  /** When true, renders the card framed as a source crop exhibit (border-left drawn in redline). */
+  sourceCrop?: boolean
   imageWidth?: number
   imageHeight?: number
 }
@@ -36,9 +38,14 @@ export function EvidenceCard({
   ruleCitation,
   imageUrl,
   bbox,
+  sourceCrop,
   imageWidth,
   imageHeight,
 }: EvidenceCardProps) {
+  const figureClasses = sourceCrop
+    ? 'w-full overflow-hidden border-l-2 border-redline pl-0'
+    : 'w-full overflow-hidden border border-ink/20'
+
   // Normalise pixel bbox to a 0–100 viewBox; without dimensions treat
   // the bbox as already-normalised percentages.
   const norm = (value: number, dimension?: number) =>
@@ -53,8 +60,7 @@ export function EvidenceCard({
       }
     : null
 
-  return (
-    <figure className="w-full overflow-hidden border border-ink/20" style={{ borderRadius: 0 }}>
+  return (      <figure className={figureClasses} style={{ borderRadius: 0 }}>
       <div className="relative aspect-[4/3] w-full bg-paper-deep">
         {imageUrl ? (
           <img src={imageUrl} alt={`Evidence crop for ${violationId}`} className="h-full w-full object-contain" />
