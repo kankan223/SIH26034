@@ -70,3 +70,6 @@ backend/alembic/versions/__pycache__/
 
 # Uploads (local dev)
 uploads/
+
+# TypeScript build info
+*.tsbuildinfo

@@ -45,4 +45,21 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* Evidence reveal — 320ms Redline bbox stroke-draw per design.md §5.
+     Duration follows --motion-reveal so prefers-reduced-motion snaps
+     straight to the final state. */
+  @keyframes bbox-draw {
+    from {
+      stroke-dashoffset: 1000;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .bbox-draw {
+    stroke-dasharray: 1000;
+    animation: bbox-draw var(--motion-reveal) ease-out forwards;
+  }
 }
