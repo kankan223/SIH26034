@@ -55,11 +55,9 @@ describe('ReportPage', () => {
 
   it('renders the report header with inspection id', () => {
     ;(useInspection as ReturnType<typeof vi.fn>).mockReturnValue(mockInspectionData())
-    const { container } = render(<MemoryRouter><ReportPage /></MemoryRouter>)
+    render(<MemoryRouter><ReportPage /></MemoryRouter>)
     expect(screen.getByText('Compliance report')).toBeInTheDocument()
-    const headerId = container.querySelector('div > div > p')
-    expect(headerId).not.toBeNull()
-    expect(headerId?.textContent).toBe('INSP-2026-000742')
+    expect(screen.getAllByText('INSP-2026-000742')).toHaveLength(2)
   })
 
   it('renders the compliant status banner', () => {
