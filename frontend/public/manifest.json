@@ -1,0 +1,25 @@
+{
+  "name": "Docket — Legal Metrology Compliance",
+  "short_name": "Docket",
+  "description": "Automated compliance checker for packaged goods under the Legal Metrology (Packaged Commodities) Rules. Photograph a package and get an evidence-backed compliance report.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+# SIH Grand Finale demo — offline-capable, production images
+#
+# Usage:
+#   docker compose -f docker-compose.demo.yml up --build
+#
+# This stack runs the full Docket system offline (no internet required)
+# per prd.md §38.3. All services use production-grade images and a
+# pre-seeded database. The frontend PWA can be installed and used
+# without network access once loaded.
+#
+# See: prd.md §38.3 (demo-day offline requirement), prd.md §43 (deploy)
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: legal_metrology
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - demo_pgdata:/var/lib/postgresql/data
+      - ./backend/alembic/versions:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d legal_metrology"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - docket-demo
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - docket-demo
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme}
+    volumes:
+      - demo_miniodata:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "play"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - docket-demo
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app_user:${POSTGRES_PASSWORD:-changeme}@postgres:5432/legal_metrology
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme}
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_BUCKET_IMAGES: lm-images
+      S3_BUCKET_EVIDENCE: lm-evidence
+      S3_BUCKET_REPORTS: lm-reports
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-changeme-generate-a-real-32-byte-secret}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+      ENVIRONMENT: production
+      PADDLEOCR_LANG: en,hi
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/models:/models:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - docket-demo
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      VITE_API_BASE_URL: /api
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5173:5173"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - docket-demo
+
+volumes:
+  demo_pgdata:
+  demo_miniodata:
+
+networks:
+  docket-demo:
+    driver: bridge
