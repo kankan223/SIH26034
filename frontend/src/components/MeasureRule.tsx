@@ -9,21 +9,19 @@ const TICK_COLOR: Record<RuleTick, string> = {
 }
 
 interface MeasureRuleProps {
-  /**
-   * Ticks rendered top-to-bottom at 24px rhythm, colored by verdict
+  /** Ticks rendered top-to-bottom at 24px rhythm, colored by verdict
    * (Teal/Redline/Amber per design.md §6). When empty, evenly spaced
-   * unlabeled Ink ticks are rendered (Login / Report cover usage).
-   */
+   * unlabeled Ink ticks are rendered (Login / Report cover usage). */
   ticks?: RuleTick[]
   /** Unlabeled ticks when no verdict data applies. */
   tickCount?: number
   children?: ReactNode
   className?: string
+  ariaLabel?: string
 }
 
-/**
- * MeasureRule — the structural motif (design.md §6).
- *
+/** MeasureRule — the structural motif (design.md §6).
+
  * A vertical ~6px-wide tick-marked rule running down the left edge of
  * key screens. Ticks map to real data on each screen: verdict colors
  * on Compliance Results, a confidence marker on Violation Evidence.
@@ -33,12 +31,17 @@ export function MeasureRule({
   tickCount = 8,
   children,
   className = '',
+  ariaLabel,
 }: MeasureRuleProps) {
   const entries: RuleTick[] =
     ticks.length > 0 ? ticks : Array.from({ length: tickCount }, () => 'pass')
 
   return (
-    <div className={`flex items-stretch gap-3 ${className}`} role="img" aria-label="Measure rule">
+    <div
+      className={`flex items-stretch gap-3 ${className}`}
+      role="img"
+      aria-label={ariaLabel ?? 'Measure rule'}
+    >
       <div className="relative w-[6px] border-l border-ink/40" aria-hidden="true">
         {entries.map((tick, index) => (
           <span

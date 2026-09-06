@@ -50,26 +50,28 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-apiClient.interceptors.request.use((config) => {
-  const token = getAuthToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      clearAuthTokens()
-      if (window.location.pathname !== '/login') {
-        window.location.assign('/login')
-      }
+if (typeof window !== 'undefined') {
+  apiClient.interceptors.request.use((config) => {
+    const token = getAuthToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
-    return Promise.reject(error)
-  },
-)
+    return config
+  })
+
+  apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        clearAuthTokens()
+        if (window.location.pathname !== '/login') {
+          window.location.assign('/login')
+        }
+      }
+      return Promise.reject(error)
+    },
+  )
+}
 
 /** Extract a human-readable message from an API error (FastAPI `detail`). */
 export function getApiErrorMessage(error: unknown, fallback = 'Something went wrong'): string {

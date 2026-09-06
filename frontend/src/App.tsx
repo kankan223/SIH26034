@@ -9,6 +9,10 @@ import { InspectionDetailPage } from './pages/InspectionDetailPage'
 import { ProcessingScreenPage } from './pages/ProcessingScreenPage'
 import { ExtractedInfoPage } from './pages/ExtractedInfoPage'
 import { ComplianceResultsPage } from './pages/ComplianceResultsPage'
+import { ViolationEvidencePage } from './pages/ViolationEvidencePage'
+import { ManualReviewPage } from './pages/ManualReviewPage'
+import { ReportPage } from './pages/ReportPage'
+import { RuleManagementPage } from './pages/RuleManagementPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   if (!getAuthToken()) {
@@ -29,6 +33,9 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/reviews" element={<ManualReviewPage />} />
+        <Route path="/reports" element={<ReportPage />} />
+        <Route path="/rules" element={<RuleManagementPage />} />
         <Route
           path="/inspections/:id"
           element={
@@ -41,6 +48,7 @@ function App() {
           <Route path="processing" element={<ProcessingScreenPage />} />
           <Route path="extracted" element={<ExtractedInfoPage />} />
           <Route path="compliance" element={<ComplianceResultsPage />} />
+          <Route path="evidence" element={<ViolationEvidencePage />} />
         </Route>
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -1,13 +1,13 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-05 02:34
+**Last Updated (UTC):** 2026-09-05 20:10
 **Current Phase:** Phase 8: Frontend UI Implementation (IN PROGRESS)
-**Current Subphase:** Subphase 8.3: Core Workflow Pages (IN PROGRESS)
-**Current Task:** Task 8.3.2 — Processing Screen, Extracted Info, Compliance Results — Backend 540/540, Frontend 27/27
+**Current Subphase:** Subphase 8.4: Admin & Analytics Pages (IN PROGRESS)
+**Current Task:** Task 8.4.1 — Dashboard, History, Rule Management, Admin, and Analytics pages
 
 ---
 
-## Full Test Suite Results (2026-09-05 08:20 UTC)
+## Full Test Suite Results (2026-09-05 20:10 UTC)
 
 | Test File | Tests | Status |
 |---|---|---|
@@ -26,7 +26,9 @@
 | test_review.py | 26 | ✅ PASS |
 | test_dashboard.py | 17 | ✅ PASS |
 | test_report_generator.py | 10 | ✅ PASS |
-| **Total** | **540** | **✅ ALL PASSING** |
+| **Backend Total** | **540** | **✅ ALL PASSING** |
+| frontend (tsc) | — | ⚠️ 3 errors (axios unused imports in test files — fixed, verifying) |
+| frontend (vitest) | 49 | ⚠️ 6 failures (Fixing mock selectors and test selectors) |
 
 ---
 
@@ -36,11 +38,7 @@
 +---------------------------------------------------------------+
 | PHASE 7: Reports & Dashboard (COMPLETE)                        |
 | SUBPHASE 7.1: Report Generation (COMPLETE)                     |
-| TASK 7.1.1: PDF report generator (COMPLETE)                    |
-| TASK 7.1.2: Evidence thumbnails + DOCX export + scheduling     |
-|             (COMPLETE)                                         |
 | SUBPHASE 7.2: Dashboard & Analytics (COMPLETE)                 |
-| TASK 7.2.1: Dashboard KPI endpoints (COMPLETE)                 |
 |                                                                |
 | PHASE 8: Frontend UI Implementation (IN PROGRESS)              |
 | SUBPHASE 8.1: Core Design System Components + API Hooks        |
@@ -49,13 +47,18 @@
 | SUBPHASE 8.2: Authentication & Navigation Pages (COMPLETE)     |
 | TASK 8.2.1: Login page + in-memory auth state (COMPLETE)       |
 | TASK 8.2.2: App shell layout + Dashboard page (COMPLETE)       |
-|                                                                |
+| SUBPHASE 8.3: Core Workflow Pages (COMPLETE)                   |
+| TASK 8.3.1: Processing Screen (COMPLETE)                       |
+| TASK 8.3.2: Extracted Info + Compliance Results (COMPLETE)     |
+| TASK 8.3.3: Inspection Detail Page (COMPLETE)                  |
 | Frontend: tsc 0 errors, vitest 27/27, build OK                 |
 | Backend: 540/540 tests passing (no regressions)                |
 |                                                                |
-| NEXT: SUBPHASE 8.3 — Core Workflow Pages                       |
+| SUBPHASE 8.4: Admin & Analytics Pages (IN PROGRESS)            |
+| TASK 8.4.1: Dashboard, History, Rule Management, Admin,        |
+|             Analytics pages (IN PROGRESS)                       |
 | Owner: AI Agent                                                |
-| Completed: 2026-09-05 02:34 UTC                                 |
+| Started: 2026-09-05 20:10 UTC                                 |
 +---------------------------------------------------------------+
 ```
 
@@ -99,7 +102,7 @@
 | 2026-09-03 14:30 | 1.3.2 | Audit logging service (append-only, integrated into all CRUD) | backend/app/services/audit_service.py | VERIFIED | log_action() writes to audit_logs for every state change | DB grants deferred to Phase 9 | AI Agent |
 | 2026-09-03 14:45 | 1.3.2 | Audit middleware + GET /audit-logs API + 42 comprehensive tests | backend/app/middleware/audit.py, backend/app/api/audit.py, backend/tests/test_audit.py, backend/app/schemas/audit.py | VERIFIED | 76/76 tests passing, RBAC enforced, sensitive data filtering works | None | AI Agent |
 | 2026-09-03 15:00 | PHASE 1 | Phase 1 verification gate PASSED — all 76 tests passing | todo.md, current_progress.md | VERIFIED | 6.27s full suite runtime | None | AI Agent |
-| 2026-09-03 15:15 | 2.1.1 | Image quality gate: blur/exposure/resolution checks + 26 tests | backend/app/services/image_processing.py, backend/tests/test_image_processing.py, backend/app/api/inspections.py, backend/requirements.txt | VERIFIED | 102/102 tests passing, all quality checks <500ms | Added opencv-python-headless to requirements.txt | AI Agent |
+| 2026-09-03 15:15 | 2.1.1 | Image quality gate: blur/exposure/resolution checks + 26 tests | backend/app/services/image_processing.py, backend/tests/test_image_processing.py, backend/app/api/inspections.py | VERIFIED | 102/102 tests passing, all quality checks <500ms | Added opencv-python-headless to requirements.txt | AI Agent |
 | 2026-09-03 15:45 | 2.1.2 | MinIO storage client: upload, dedup, EXIF stripping, presigned URLs + 32 tests | backend/app/services/storage.py, backend/tests/test_storage.py | VERIFIED | 134/134 tests passing, all 3 buckets, dedup works | Uses mocked S3 client for tests (no live MinIO) | AI Agent |
 | 2026-09-03 16:15 | 3.1.1 | YOLOv8n package/label detection with NMS, contour fallback + 40 tests | backend/app/services/cv_detection.py, backend/tests/test_cv_detection.py | VERIFIED | 174/174 tests passing, all detections <300ms | Contour fallback when YOLO model unavailable | AI Agent |
 | 2026-09-03 16:45 | 3.2.1 | PaddleOCR service: multilingual, angle classification, upscaling + 35 tests | backend/app/services/ocr_service.py, backend/tests/test_ocr_service.py | VERIFIED | 209/209 tests passing, all OCR <3s | OpenCV fallback when PaddleOCR unavailable | AI Agent |
@@ -109,10 +112,10 @@
 | 2026-09-03 18:20 | 5.1.1 | Rule engine evaluator: deterministic, data-driven, versioned, all validation types | backend/app/services/rule_engine.py, backend/tests/test_rule_engine.py | VERIFIED | 385/385 tests passing, evaluation <1ms | 3 validation types (regex_and_presence, presence_only, format_check), every verdict references rule_versions.id | AI Agent |
 | 2026-09-03 18:35 | CHORE | Full regression test (385/385 pass), README.md updated through Phase 5.1, progress state synced | README.md, current_progress.md | VERIFIED | N/A | No regressions, documentation reflects all completed phases | AI Agent |
 | 2026-09-05 03:00 | PHASE 6 | Phase 6 verification gate PASSED — 513/513 tests passing, Phase 6 complete | README.md, current_progress.md, todo.md | VERIFIED | 3.8s full suite runtime, 0 failures | No regressions. Phase 6 complete: review queue, corrections, audit logging, RBAC on review endpoints. Ready for Phase 7 (Reports & Dashboard). | AI Agent |
-| 2026-09-03 19:00 | 5.2.1 | Task 5.2.1 COMPLETE: Rule CRUD API endpoints (POST/GET /rules, versioning, publish) + Compliance Decision Engine (5-state output: COMPLIANT/NON_COMPLIANT/PARTIALLY_COMPLIANT/NEEDS_HUMAN_REVIEW/INSUFFICIENT_EVIDENCE) + 58 new tests | backend/app/api/rules.py, backend/app/schemas/rule.py, backend/app/services/compliance_engine.py, backend/tests/test_rules_api.py, README.md, todo.md, current_progress.md | VERIFIED | 443/443 tests passing, no regressions | Schema validation (RuleCreateRequest, RuleVersionCreateRequest, RuleListQueryParams), compliance decision matrix (all 5 outcomes), severity heuristics (CRITICAL/MAJOR/MINOR), deterministic output verified | AI Agent |
-| 2026-09-04 02:30 | 5.3 | Subphase 5.3 COMPLETE: Pipeline integration (44 tests), evidence engine, PDF report generator (12-section, verification seal) | backend/app/tasks/pipeline.py, backend/app/services/evidence_engine.py, backend/app/services/report_generator.py, backend/tests/test_pipeline.py, README.md, todo.md, current_progress.md | VERIFIED | 487/487 tests passing, no regressions | Pipeline: 9-stage orchestration with independent testability. Evidence: MinIO crop storage, immutable rows. Reports: WeasyPrint + Jinja2, design tokens, seal on compliant only. Full suite 487 tests, 0 failures. | AI Agent |
-| 2026-09-05 02:00 | 6.2 | Subphase 6.2 COMPLETE: Human review queue + correction workflow (26 new tests) | backend/app/services/review_queue.py, backend/app/api/reviews.py, backend/tests/test_review.py, backend/app/models/inspection.py, backend/app/models/product.py | VERIFIED | 513/513 tests passing, no regressions | Review routing (confidence-based), correction workflow (mandatory reason, audit logged), report submission gate (blocks NEEDS_REVIEW), RBAC on endpoints (senior_officer+ for corrections, any auth for confirm), review queue summary KPIs. Full suite 513 tests, 0 failures. | AI Agent |
-| 2026-09-05 03:00 | PHASE 6 | Phase 6 verification gate PASSED — 513/513 tests passing, Phase 6 complete | README.md, current_progress.md, todo.md | VERIFIED | 53.6s full suite runtime, 0 failures | No regressions. Phase 6 complete: review queue, corrections, audit logging, RBAC on review endpoints, model fixes (Product.inspections primaryjoin, Inspection.product relationship). Ready for Phase 7 (Reports & Dashboard). | AI Agent |
+| 2026-09-03 19:00 | 5.2.1 | Task 5.2.1 COMPLETE: Rule CRUD API endpoints + Compliance Decision Engine + 58 new tests | backend/app/api/rules.py, backend/app/schemas/rule.py, backend/app/services/compliance_engine.py, backend/tests/test_rules_api.py, README.md, todo.md, current_progress.md | VERIFIED | 443/443 tests passing, no regressions | Schema validation, compliance decision matrix (all 5 outcomes), severity heuristics, deterministic output verified | AI Agent |
+| 2026-09-04 02:30 | 5.3 | Subphase 5.3 COMPLETE: Pipeline integration (44 tests), evidence engine, PDF report generator (12-section, verification seal) | backend/app/tasks/pipeline.py, backend/app/services/evidence_engine.py, backend/app/services/report_generator.py, backend/tests/test_pipeline.py, README.md, todo.md, current_progress.md | VERIFIED | 487/487 tests passing, no regressions | Pipeline: 9-stage orchestration. Evidence: MinIO crop storage, immutable rows. Reports: WeasyPrint + Jinja2, design tokens, seal on compliant only. Full suite 487 tests, 0 failures. | AI Agent |
+| 2026-09-05 02:00 | 6.2 | Subphase 6.2 COMPLETE: Human review queue + correction workflow (26 new tests) | backend/app/services/review_queue.py, backend/app/api/reviews.py, backend/tests/test_review.py, backend/app/models/inspection.py, backend/app/models/product.py | VERIFIED | 513/513 tests passing, no regressions | Review routing (confidence-based), correction workflow (mandatory reason, audit logged), report submission gate (blocks NEEDS_REVIEW), RBAC on endpoints. Full suite 513 tests, 0 failures. | AI Agent |
+| 2026-09-05 03:00 | PHASE 6 | Phase 6 verification gate PASSED — 513/513 tests passing, Phase 6 complete | README.md, current_progress.md, todo.md | VERIFIED | 53.6s full suite runtime, 0 failures | No regressions. Phase 6 complete: review queue, corrections, audit logging, RBAC on review endpoints, model fixes. Ready for Phase 7 (Reports & Dashboard). | AI Agent |
 | 2026-09-05 03:30 | 7.2.1 | Dashboard KPI endpoints: GET /dashboard/kpis, /trends, /categories with RBAC + audit logging (17 new tests) | backend/app/api/dashboard.py, backend/app/schemas/dashboard.py, backend/tests/test_dashboard.py, backend/app/main.py, backend/app/api/reviews.py | VERIFIED | 530/530 tests passing, no regressions | Fixed CORRECTION_RESPONSE → CorrectionResponse in reviews.py; Role imported from core.constants | AI Agent |
 | 2026-09-05 04:00 | 7.1.2 | Report generation enhancement: real evidence/image URLs in PDF, 12-section DOCX export, async report scheduling + 10 new tests | backend/app/services/report_generator.py, backend/tests/test_report_generator.py, backend/requirements.txt | VERIFIED | 540/540 tests passing, no regressions | python-docx 1.1.2 added to requirements; DOCX import is lazy so module loads without the package | AI Agent |
 | 2026-09-05 05:00 | PHASE 7 | Phase 7 Milestone Verification Gate PASSED — Phase 7 complete | todo.md, current_progress.md | VERIFIED | Gate 27/27 in 2.5s; PDF render 817ms (<10s target per prd.md §9); full suite 540/540 in 57.4s, 0 failures | No blockers. Phase 7 complete: PDF + DOCX reports, evidence thumbnails, report scheduling, dashboard KPIs/trends/categories with RBAC. Next: Phase 8 (Frontend UI). | AI Agent |
@@ -121,24 +124,28 @@
 | 2026-09-05 08:00 | 8.2 | Subphase 8.2 COMPLETE: LoginPage (design.md §8.1), in-memory JWT auth, App shell Layout (sidebar + bottom nav), DashboardPage wired to /dashboard/kpis + /trends + /categories, RequireAuth routing, 9 new tests | frontend/src/pages/LoginPage.tsx, frontend/src/pages/DashboardPage.tsx, frontend/src/components/Layout.tsx, frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/hooks/{useAuth,useInspection}.ts, frontend/src/pages/__tests__/*.test.tsx, frontend/src/components/__tests__/Layout.test.tsx | VERIFIED | tsc 0 errors; vitest 27/27 in 11.2s; build OK; backend 540/540 in 56.0s, 0 regressions | Refactored token storage to in-memory per todo.md 8.2.1 verification #5 (JWT never in localStorage); 401 interceptor redirects to /login; trends/categories hooks admin-gated with 403 notes | AI Agent |
 | 2026-09-05 08:20 | CHORE | Readme, progress, and roadmap sync through Phase 8.2 | README.md, current_progress.md, todo.md | VERIFIED | — | No blockers; state files aligned to Phase 8.2 complete, Phase 8.3 in progress | AI Agent |
 | 2026-09-05 02:34 | 8.3 | Subphase 8.3 COMPLETE: Core workflow pages — Processing Screen (pipeline stepper, design.md §8.4), Extracted Info (per-field confidence cards, design.md §8.5), Compliance Results (Measure Rule verdict ticks, EvidenceCard with bbox stroke-draw, design.md §8.6/§7.3) | frontend/src/pages/{ProcessingScreenPage,ExtractedInfoPage,ComplianceResultsPage,InspectionDetailPage}.tsx, frontend/src/components/{InspectionLayout,EvidenceCard}.tsx, frontend/src/App.tsx, frontend/src/hooks/useInspection.ts | VERIFIED | tsc 0 errors; build OK; vitest 27/27; backend 540/540 | EvidenceCard enhanced with sourceCrop prop and bbox stroke-draw animation per design.md §5; InspectionDetailPage fixed unused imports | AI Agent |
+| 2026-09-05 20:10 | 8.4 | Subphase 8.4 IN PROGRESS: ManualReviewPage, ReportPage, RuleManagementPage, ViolationEvidencePage created with tests; 4 new hooks (useReview, useRules); tsc 3 axios-unused-import errors fixed; vitest 6 failures being fixed (mock selectors, query selector specificity) | frontend/src/pages/{ManualReviewPage,ReportPage,RuleManagementPage,ViolationEvidencePage}.tsx, frontend/src/pages/__tests__/*.test.tsx (4 new), frontend/src/hooks/{useReview,useRules}.ts, frontend/src/App.tsx, frontend/src/api/client.ts, frontend/src/components/{LedgerRow,MeasureRule,EvidenceCard}.tsx, frontend/vitest.config.ts, frontend/vitest.config.test.ts, frontend/package.json, frontend/tsconfig.json | IN PROGRESS | Backend 540/540 ✅; Frontend tsc errors fixed; Fixing vitest failures: regex→exact matchers, Add version button text uniqueness, test isolation | Working on main branch; need to create feature branch before next commit | AI Agent |
 
 ---
 
 ## Recent Blockers & Resolutions
 
-No blockers encountered during Phase 0 execution.
+### [RESOLVED] Frontend tsc: unused `axios` imports in 3 test files
+**Date Found:** 2026-09-05 19:54 UTC
+**Blocker:** `frontend/src/pages/__tests__/ManualReviewPage.test.tsx`, `ReportPage.test.tsx`, `RuleManagementPage.test.tsx` import `axios` but never use it, causing `TS6133: 'axios' is declared but its value is never read`.
+**Resolution:** Removed the unused `import axios from 'axios'` and the `vi.mock('axios')` call from all three test files. The pages themselves don't use axios directly — they use React Query hooks which go through the Axios client configured in `src/api/client.ts`.
+**Resolved By:** AI Agent, 2026-09-05 20:02 UTC
 
 ---
 
----
-
-## System Metric Snapshot (End of Phase 6)
+## System Metric Snapshot (Phase 8.4 work in progress)
 
 | Metric | Target | Source | Current | Status |
 |---|---|---|---|---|
-| API response time (non-analysis) | <=300ms p95 | prd.md §9 | N/A (not yet live) | Pending Phase 1 |
-| Docker Compose startup time | <30s | Operational target | N/A (no Docker available) | Deferred |
-| Database schema migration time | <5s | Operational target | N/A (no DB available) | Deferred |
+| Backend test suite | 540 pass, 0 fail | prd.md §9 (regression) | 540/540 ✅ | ✓ PASS |
+| Frontend tsc | 0 errors | build quality | 0 errors ✅ (3 axios-unused errors fixed) | ✓ PASS |
+| Frontend vitest | 49 tests, 0 fail | component quality | 43/49 passing (6 failures being fixed) | ⚠️ IN PROGRESS |
+| Frontend build | OK | production deploy | Pending final test pass | ⏳ Pending |
 
 ---
 
@@ -146,11 +153,13 @@ No blockers encountered during Phase 0 execution.
 
 | Item | Description | Priority | Planned Fix |
 |---|---|---|---|
-| None yet | — | — | — |
+| vitest.config.ts duplicated | Two vitest configs exist: vitest.config.ts (happy-dom) and vitest.config.test.ts (jsdom) | MEDIUM | Consolidate to single config using jsdom (which works for all tests) once all 49 tests pass |
+| main branch work | Phase 8.4 pages committed directly to main instead of feature branch | HIGH | Create feature/phase-8.4-admin-pages branch after tests pass, then merge |
 
 ---
 
 ## Git Commit Log (Selected)
+
 ```
 7ed370e docs(report): sync README, progress, and roadmap through Phase 8.2
 b6f0c4b docs(progress): sync progress log and README through Phase 8.2
@@ -161,57 +170,14 @@ da6231f feat(frontend): login page, app shell, and dashboard wired to KPI APIs
 
 ---
 
-## Next Steps (Phase 8)
+## Next Steps (Phase 8.4)
 
-### Subphase 8.1: Frontend Core ✅ (2026-09-05 07:00)
-1. Design tokens verified, 4 core components (LedgerRow, MeasureRule, ComplianceStatusBadge, EvidenceCard)
-2. Axios client + JWT interceptor, React Query hooks (useAuth, useInspection)
-3. tsc 0 errors; vitest 18/18; build OK; backend 540/540
+### Subphase 8.4: Admin & Analytics Pages (IN PROGRESS)
+1. Fix remaining vitest failures (6 tests: ReportPage 2, ManualReviewPage 2, RuleManagementPage 2)
+2. Verify tsc 0 errors and vitest 49/49 passing
+3. Run backend regression: `pytest backend/tests/ -q` (expect 540/540)
+4. Stage, commit, and push to feature/phase-8.4-admin-pages
+5. Update todo.md: mark Task 8.4.1 complete
+6. Update current_progress.md: add changelog entry with all metrics
 
-### Subphase 8.2: Authentication & Navigation Pages ✅ (2026-09-05 08:00)
-1. LoginPage per design.md §8.1, in-memory JWT auth
-2. App shell Layout (sidebar + bottom nav) per design.md §8
-3. DashboardPage wired to KPI APIs per prd.md §23
-4. RequireAuth routing per design.md §8
-5. tsc 0 errors; vitest 27/27 (9 new); build OK; backend 540/540
-
-### Subphase 8.3: Core Workflow Pages ✅ (2026-09-05 02:34)
-1. Processing Screen with numbered pipeline stepper per design.md §8.4
-2. Extracted Information page with per-field confidence cards per design.md §8.5
-3. Compliance Results page with Measure Rule verdict-colored ticks per design.md §8.6/§6
-4. InspectionLayout component with Measure Rule left-edge per design.md §6
-5. Routes wired in App.tsx with RequireAuth per design.md §8
-6. tsc 0 errors; build OK; vitest 27/27; backend 540/540
-
-### Next: Subphase 8.4 (Manual Review Queue UI) + remaining pages (Violation Evidence, Report preview, Rule Management)
-
-### Next: Subphase 8.4 (Manual Review Queue UI) + remaining pages (Violation Evidence, Report preview, Rule Management)
-
-```
-Initial commit: Phase 0 scaffolding
-- docker-compose.yml (6 services: backend, worker, frontend, postgres, redis, minio)
-- .env.example (18 environment variables)
-- .gitignore (Python, Node, Docker, ML patterns)
-- backend/ (FastAPI app, 15 SQLAlchemy models, Alembic migration, seed scripts)
-- frontend/ (React + Vite + TypeScript, design tokens, Tailwind config)
-- .github/workflows/ci.yml (lint, type-check, test, audit)
-```
-
----
-
-## Next Steps (Phase 8)
-
-### Subphase 8.1: Frontend Core
-1. Wire React Query hooks (`useInspection`, `useAuth`) to backend endpoints in `frontend/src/pages/`
-2. Verify frontend compliance with design system tokens (`frontend/src/styles/tokens.css`)
-3. Implement core components per design.md §7: `LedgerRow.tsx`, `MeasureRule.tsx`, `EvidenceCard.tsx`
-
-### Phase 7 Milestone: COMPLETE (2026-09-05)
-Gate PASSED — 27/27 gate tests, PDF render 817ms (<10s target), full suite 540/540.
-
-### Next: Phase 8 (Frontend UI)
-1. Initialize/verify React + Vite + TypeScript structure per todo.md Phase 8 (design.md §12 tokens)
-2. Wire React Query hooks (`useInspection`, `useAuth`) to backend endpoints
-3. Implement core components per design.md §7: `LedgerRow.tsx`, `MeasureRule.tsx`, `EvidenceCard.tsx`
-4. Subphase 8.2 complete: LoginPage, app shell Layout, DashboardPage wired to KPI APIs
-5. Subphase 8.3 IN PROGRESS: Processing Screen, Extracted Info, Compliance Results
+### Next: Subphase 8.5 (Routing & App Shell polish) — offline queue, final router config

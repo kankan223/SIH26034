@@ -38,7 +38,7 @@ export function EvidenceCard({
   ruleCitation,
   imageUrl,
   bbox,
-  sourceCrop,
+  sourceCrop = false,
   imageWidth,
   imageHeight,
 }: EvidenceCardProps) {
