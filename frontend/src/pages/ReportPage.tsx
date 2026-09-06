@@ -90,7 +90,7 @@ export function ReportPage() {
         </div>
         <div className="flex flex-col gap-1">
           <dt className="text-micro text-ink/50">Product</dt>
-          <dd className="text-small text-ink">{inspection?.product_name ?? '—'}</dd>
+          <dd className="text-small text-ink">{(inspection?.product_name ?? '—') as string}</dd>
         </div>
       </dl>
 

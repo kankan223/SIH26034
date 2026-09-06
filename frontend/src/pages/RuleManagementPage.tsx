@@ -16,6 +16,7 @@ export function RuleManagementPage() {
   const createRule = useCreateRule()
   const addVersion = useAddRuleVersion()
   const [selectedRuleKey, setSelectedRuleKey] = useState<string | undefined>(undefined)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [createForm, setCreateForm] = useState<RuleCreateRequest>({
     rule_key: '',
     title: '',
@@ -55,14 +56,14 @@ export function RuleManagementPage() {
         <button
           type="button"
           className="rounded-control bg-ink text-white px-4 py-2 text-label font-medium transition-colors hover:bg-ink/90 active:bg-ink/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-          onClick={() => setCreateForm({ rule_key: '', title: '', description: '', product_categories: [], severity: 'major' })}
+          onClick={() => setShowCreateForm(true)}
         >
           New rule
         </button>
       </div>
 
       {/* New rule form — inline panel */}
-      {createForm.rule_key || createForm.title ? (
+      {showCreateForm ? (
         <section className="flex flex-col gap-3 border border-ink/10 rounded-surface bg-paper-deep p-4">
           <h2 className="text-label font-medium text-ink">New rule</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -118,7 +119,7 @@ export function RuleManagementPage() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setCreateForm({ rule_key: '', title: '', description: '', product_categories: [], severity: 'major' })}
+                onClick={() => setShowCreateForm(false)}
                 className="rounded-control border border-ink bg-transparent px-3 py-1.5 text-label text-ink hover:bg-paper-deep active:bg-paper-deep focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
               >
                 Cancel
@@ -128,6 +129,7 @@ export function RuleManagementPage() {
                 onClick={() => {
                   createRule.mutate(createForm, {
                     onSuccess: () => {
+                      setShowCreateForm(false)
                       setCreateForm({ rule_key: '', title: '', description: '', product_categories: [], severity: 'major' })
                       setSelectedRuleKey(undefined)
                     },

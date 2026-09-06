@@ -73,9 +73,9 @@ export function ViolationEvidencePage() {
           detected={detected}
           expected={expected}
           ruleCitation={`Rule citation — ${ruleKey}`}
-          imageUrl={inspection?.image_url}
-          imageWidth={inspection?.image_width}
-          imageHeight={inspection?.image_height}
+          imageUrl={(inspection?.image_url ?? undefined) as string | undefined}
+          imageWidth={(inspection?.image_width ?? undefined) as number | undefined}
+          imageHeight={(inspection?.image_height ?? undefined) as number | undefined}
           sourceCrop
         />
       </div>

@@ -1,9 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
+import { QueryClient } from '@tanstack/react-query'
 
-// testing-library's automatic cleanup only registers when vitest globals
-// are enabled; with explicit imports we register it ourselves.
+let queryClient: QueryClient | undefined
+
 afterEach(() => {
   cleanup()
+  queryClient?.clear()
 })
+
+// TestWrapper is defined inline in each test file.
+// This file only provides cleanup and the jest-dom matchers.
