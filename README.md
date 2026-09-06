@@ -132,6 +132,15 @@ An automated compliance checker for packaged goods under the Legal Metrology (Pa
 - **Verification seal** — COMPLIANT exports only, per design.md §9
 - **Dashboard KPIs** — GET /dashboard/kpis, /trends, /categories with RBAC + audit logging
 
+### Phase 8: Frontend UI Implementation ✅
+- **Core design system components** — LedgerRow (left-edge status tick, compact spacing per §3.2), MeasureRule (confidence meter baseline motif per §6), ComplianceStatusBadge (status-colored band), EvidenceCard (specimen card with bbox stroke-draw animation per §7.3)
+- **API client & hooks** — Axios client with JWT request interceptor + 401 redirect; React Query hooks `useAuth`, `useInspection`; in-memory JWT only (never localStorage per §8.2.1 verification #5)
+- **Auth & navigation** — LoginPage (design.md §8.1), app shell Layout (desktop sidebar + mobile bottom nav, Measure Rule collapses to 3px on mobile per §10), DashboardPage wired to `/dashboard/kpis` + `/trends` + `/categories`, RequireAuth routing
+- **Core workflow pages** — ProcessingScreenPage (pipeline stepper, §8.4), ExtractedInfoPage (per-field confidence cards, §8.5), ComplianceResultsPage (verdict ticks, EvidenceCard with bbox animation, §8.6/§7.3), InspectionDetailPage
+- **Admin & analytics pages** — ManualReviewPage (review queue + correction form), ReportPage (compliance preview), RuleManagementPage (rule list, version history, create/edit UI), ViolationEvidencePage
+- **Offline capture queue** — `useOfflineQueue` hook (IndexedDB-backed queue for POST/PUT/PATCH, auto-retry every 30s, max 3 retries); `OfflineBanner` component (Amber Flag strip per design.md §10); `lib/offline.ts` utilities; PWA service worker via `vite-plugin-pwa` caching app shell for offline access per prd.md §27
+- **Frontend tests** — 58 Vitest tests passing (12 files), 0 TypeScript errors, 0 hardcoded colors
+
 ---
 
 ## API Endpoints
@@ -199,60 +208,58 @@ npm install
 npm test
 ```
 
-### Backend Structure
+### Frontend Structure
 
 ```
-backend/
-├── app/
-│   ├── main.py                    # FastAPI app, middleware, routers
-│   ├── core/
-│   │   ├── config.py              # Settings from environment
-│   │   ├── security.py            # bcrypt + JWT utilities
-│   │   ├── rbac.py                # Role-based access control
-│   │   └── constants.py           # Shared enums (Role, Status, etc.)
+frontend/
+├── src/
+│   ├── App.tsx                          # React Router + OfflineBanner
+│   ├── main.tsx                         # Entry point (QueryClient, BrowserRouter)
 │   ├── api/
-│   │   ├── auth.py                # POST /auth/login, /auth/refresh
-│   │   ├── inspections.py         # Inspection CRUD + image upload
-│   │   ├── audit.py               # GET /audit-logs (admin-only)
-│   │   ├── rules.py               # Rule CRUD + versioning + publish (Phase 5.2)
-│   │   ├── reviews.py             # Review queue, corrections (Phase 6.2)
-│   │   ├── dashboard.py           # Dashboard KPIs, trends, categories (Phase 7.2)
-│   │   └── reports.py             # Report retrieval (Phase 7)
-│   ├── services/
-│   │   ├── image_processing.py    # Quality gate (blur, exposure, resolution)
-│   │   ├── cv_detection.py        # YOLOv8n package/label detection
-│   │   ├── ocr_service.py         # PaddleOCR text extraction
-│   │   ├── storage.py             # MinIO object storage
-│   │   ├── audit_service.py       # Append-only audit logging
-│   │   ├── inspection_service.py  # Inspection CRUD operations
-│   │   ├── extraction.py          # OCR fixes, normalization, field extraction
-│   │   ├── classification.py     # TF-IDF + GB classifier (10 categories)
-│   │   ├── font_analysis.py       # Relative-proxy font size estimation
-│   │   ├── rule_engine.py         # Deterministic rule evaluator (Phase 5.1)
-│   │   ├── compliance_engine.py   # 5-state compliance decision engine (Phase 5.2)
-│   │   ├── review_queue.py        # Review routing, corrections (Phase 6.2)
-│   │   ├── evidence_engine.py     # Bounding-box evidence crops (Phase 5.3)
-│   │   ├── report_generator.py    # PDF + DOCX reports, scheduling (Phase 7)
-│   │   └── pipeline.py            # 9-stage analysis orchestration (Phase 5.3)
-│   ├── tasks/
-│   │   └── pipeline.py            # Async analysis pipeline worker (Phase 5.3)
-│   ├── models/                    # 15 SQLAlchemy models
-│   ├── schemas/                   # Pydantic request/response models
-│   │   ├── rule.py                # Rule CRUD request/response schemas (Phase 5.2)
-│   │   ├── dashboard.py           # Dashboard KPI/trend/category schemas (Phase 7.2)
-│   └── middleware/
-│       └── audit.py               # Audit middleware for mutating ops
-├── alembic/                       # Database migrations
-├── scripts/                       # Seed data scripts
-├── tests/                         # 540 unit tests
-├── requirements.txt               # Production dependencies
-├── requirements-dev.txt           # Dev/test dependencies
-└── Dockerfile                     # Python 3.14-slim
+│   │   └── client.ts                    # Axios client + JWT interceptor
+│   ├── components/
+│   │   ├── Layout.tsx                   # App shell: desktop sidebar + mobile bottom nav
+│   │   ├── OfflineBanner.tsx            # Amber Flag offline strip (design.md §10)
+│   │   ├── InspectionLayout.tsx         # Inspection context shell with stepper
+│   │   ├── LedgerRow.tsx                # Compact ledger row with left-edge status tick (§3.2)
+│   │   ├── MeasureRule.tsx              # Confidence meter baseline motif (§6)
+│   │   ├── ComplianceStatusBadge.tsx    # Status-colored band (§7)
+│   │   └── EvidenceCard.tsx             # Specimen card with bbox stroke-draw (§7.3)
+│   ├── hooks/
+│   │   ├── useAuth.ts                    # useLogin, useLogout, useAuthToken (in-memory)
+│   │   ├── useInspection.ts             # useInspection, useDashboard hooks
+│   │   ├── useReview.ts                  # useReviewQueue, useConfirmReview, useOverrideReviewWithMessage
+│   │   ├── useRules.ts                   # useRules, useRuleDetail, useCreateRule, useAddRuleVersion
+│   │   └── useOfflineQueue.ts           # IndexedDB queue + auto-retry (prd.md §27)
+│   ├── lib/
+│   │   └── offline.ts                    # isOnline(), getOfflineMessage(), supportsOfflineStorage()
+│   ├── pages/
+│   │   ├── LoginPage.tsx                # Login (design.md §8.1)
+│   │   ├── DashboardPage.tsx            # KPI summary + compliance chart
+│   │   ├── ProcessingScreenPage.tsx     # Pipeline stepper (§8.4)
+│   │   ├── ExtractedInfoPage.tsx        # Per-field confidence cards (§8.5)
+│   │   ├── ComplianceResultsPage.tsx    # Verdict ticks + EvidenceCard (§8.6)
+│   │   ├── InspectionDetailPage.tsx     # Inspection detail
+│   │   ├── ViolationEvidencePage.tsx    # Evidence with bbox annotations
+│   │   ├── ManualReviewPage.tsx         # Review queue + correction form
+│   │   ├── ReportPage.tsx               # Compliance preview shell
+│   │   ├── RuleManagementPage.tsx       # Rule list, version history, create/edit UI
+│   │   └── __tests__/                   # 58 Vitest tests (12 files)
+│   ├── styles/
+│   │   ├── tokens.css                    # CSS custom properties (design.md §12)
+│   │   └── globals.css                   # Resets + font imports
+│   └── test/
+│       └── setup.ts                     # Vitest setup
+├── vite.config.ts                      # Vite + vite-plugin-pwa
+├── tsconfig.json                        # Strict mode TypeScript
+└── package.json                        # Dependencies
 ```
 
 ---
 
 ## Test Suite Summary
+
+### Backend (540 tests)
 
 | Test File | Tests | Coverage |
 |---|---|---|
@@ -273,6 +280,23 @@ backend/
 | `test_report_generator.py` | 10 | PDF sections, DOCX export, scheduling |
 | **Total** | **540** | **All passing** |
 
+### Frontend (58 Vitest tests)
+
+| Test File | Tests | Coverage |
+|---|---|---|
+| `components/__tests__/LedgerRow.test.tsx` | 6 | Status tick, compact spacing, props |
+| `components/__tests__/MeasureRule.test.tsx` | 4 | Confidence meter ticks, baseline motif |
+| `components/__tests__/ComplianceStatusBadge.test.tsx` | 4 | Status colors, variants |
+| `components/__tests__/EvidenceCard.test.tsx` | 4 | Specimen card, bbox stroke-draw animation |
+| `components/__tests__/Layout.test.tsx` | 2 | Desktop sidebar, mobile bottom nav render |
+| `pages/__tests__/DashboardPage.test.tsx` | 3 | KPI rendering with mock data |
+| `pages/__tests__/LoginPage.test.tsx` | 6 | Login form, submit, error states |
+| `pages/__tests__/ManualReviewPage.test.tsx` | 8 | Queue rendering, correction form, submit |
+| `pages/__tests__/ReportPage.test.tsx` | 5 | Report header, status banner, declarations |
+| `pages/__tests__/RuleManagementPage.test.tsx` | 7 | Rule list, detail panel, create/edit UI |
+| `pages/__tests__/ViolationEvidencePage.test.tsx` | 7 | Evidence list, bbox annotations |
+| **Total** | **58** | **All passing** |
+
 ---
 
 ## Technology Stack
@@ -288,6 +312,8 @@ backend/
 | OCR | PaddleOCR | 2.8.x |
 | Storage | boto3 (MinIO) | 1.34.x |
 | Frontend | React + Vite + TypeScript | 18.x / 5.x / 5.x |
+| State | TanStack React Query + Zustand | — |
+| Offline | IndexedDB + vite-plugin-pwa (Workbox) | — |
 | Database | PostgreSQL | 17 |
 | Cache | Redis | 7 |
 | Object Storage | MinIO | latest |
@@ -296,29 +322,30 @@ backend/
 
 ## Project Roadmap
 
-| Phase | Status | Tests | Description |
-|---|---|---|---|
-| Phase 0 | ✅ Complete | — | Scaffolding, DB schema, CI/CD |
-| Phase 1 | ✅ Complete | 76 | Auth, RBAC, Inspection CRUD, Audit |
-| Phase 2 | ✅ Complete | 58 | Image quality gate, MinIO storage |
-| Phase 3 | ✅ Complete | 75 | YOLO detection, PaddleOCR |
-| Phase 3.3 | ✅ Complete | 56 | Text normalization & declaration extraction |
-| Phase 4 | ✅ Complete | 62 | Classification + font analysis |
-| Phase 5.1 | ✅ Complete | 58 | Rule engine evaluator |
-| Phase 5.2 | ✅ Complete | 58 | Rule CRUD API + Compliance Decision Engine |
-| Phase 5.3 | ✅ Complete | 44 | Pipeline integration, evidence engine, PDF reports |
-| Phase 6 | ✅ Complete | 26 | Evidence engine + human review queue |
-| Phase 7 | ✅ Complete | 27 | PDF/DOCX reports + dashboard & analytics |
-| Phase 8 | ✅ Complete | 27 | Core components, auth UI, dashboard shell, core workflow pages (processing, extracted info, compliance results) |
-| Phase 9 | ⏳ Pending | — | Hardening, demo, submission |
+| Phase | Status | Backend Tests | Frontend Tests | Description |
+|---|---|---|---|---|
+| Phase 0 | ✅ Complete | — | — | Scaffolding, DB schema (15 tables), CI/CD |
+| Phase 1 | ✅ Complete | 76 | — | Auth, RBAC, Inspection CRUD, Audit logging |
+| Phase 2 | ✅ Complete | 58 | — | Image quality gate, MinIO storage |
+| Phase 3 | ✅ Complete | 75 | — | YOLO detection, PaddleOCR text extraction |
+| Phase 3.3 | ✅ Complete | 56 | — | Text normalization & declaration extraction |
+| Phase 4 | ✅ Complete | 62 | — | Product classification + font analysis |
+| Phase 5.1 | ✅ Complete | 58 | — | Deterministic rule engine evaluator |
+| Phase 5.2 | ✅ Complete | 58 | — | Rule CRUD API + Compliance Decision Engine |
+| Phase 5.3 | ✅ Complete | 44 | — | Pipeline integration, evidence engine, PDF reports |
+| Phase 6 | ✅ Complete | 26 | — | Evidence engine + human review queue + corrections |
+| Phase 7 | ✅ Complete | 27 | — | PDF/DOCX reports + dashboard & analytics APIs |
+| Phase 8 | ✅ Complete | 540 | 58 Vitest | Full frontend: design system, auth UI, workflow pages, admin pages, offline queue |
+| Phase 9 | ⏳ Pending | — | — | DB hardening, demo deployment, submission |
 
-**Phase 8 deliverables (540 backend + 27 frontend tests passing):**
-- Core Docket components: LedgerRow, MeasureRule, ComplianceStatusBadge, EvidenceCard
-- API client (Axios + JWT interceptor) and React Query hooks (useAuth, useInspection)
-- LoginPage, app shell Layout, DashboardPage wired to KPI APIs
-- Core workflow pages: InspectionDetailPage, ProcessingScreenPage, ExtractedInfoPage, ComplianceResultsPage
-- 18/18 component tests (Phase 8.1) + 27/27 total (Phase 8.2 + 8.3) passing
-- 0 TypeScript errors, 0 hardcoded colors
+**Phase 8 deliverables (540 backend + 58 frontend tests passing):**
+- Core Docket components: LedgerRow, MeasureRule, ComplianceStatusBadge, EvidenceCard (18 tests)
+- API client (Axios + JWT interceptor) and React Query hooks (useAuth, useInspection) (Phase 8.1)
+- LoginPage, app shell Layout, DashboardPage wired to KPI APIs (Phase 8.2)
+- Core workflow pages: InspectionDetailPage, ProcessingScreenPage, ExtractedInfoPage, ComplianceResultsPage (Phase 8.3)
+- Admin pages: ManualReviewPage, ReportPage, RuleManagementPage, ViolationEvidencePage (Phase 8.4)
+- Offline capture queue: useOfflineQueue (IndexedDB), OfflineBanner (Amber Flag), lib/offline, PWA SW (Phase 8.5)
+- 0 TypeScript errors, 0 hardcoded colors, all 58 Vitest tests passing
 
 ---
 
