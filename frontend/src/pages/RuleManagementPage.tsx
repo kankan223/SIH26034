@@ -119,7 +119,10 @@ export function RuleManagementPage() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
+                onClick={() => {
+                  setShowCreateForm(false)
+                  setCreateForm({ rule_key: '', title: '', description: '', product_categories: [], severity: 'major' })
+                }}
                 className="rounded-control border border-ink bg-transparent px-3 py-1.5 text-label text-ink hover:bg-paper-deep active:bg-paper-deep focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
               >
                 Cancel
