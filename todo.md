@@ -2800,4 +2800,20 @@ git push origin main --tags
 
 ---
 
+## Post-Completion Maintenance Log (Ops Hardening)
+
+### 2026-09-07 Session — COMPLETED
+- [x] Docker build fixed for Python 3.12 runtime (base image 3.13→3.12-slim, libjpeg-dev added; paddleocr 2.9.1 / paddlepaddle 3.3.x / onnxruntime 1.29.0 pins aligned) — full backend image build verified (3.82 GB)
+- [x] Host-side classifier training verified without Docker (venv, sklearn 1.5.2 pin): 89 samples × 8 classes, 33/33 tests pass, inference 6.9 ms (<50 ms per prd.md §10.2)
+- [x] `OPERATING_AND_TRAINING_GUIDE.md` written: Windows migration, Docker/native/demo startup, dataset acquisition + YOLO retraining + PaddleOCR notes, verification checklist, troubleshooting
+- [x] Accidental downgrade of `docker-compose.demo.yml` in working tree reverted (Phase 9.2 offline demo stack restored)
+- [x] Classifier artifact kept at committed (Docker-compatible) version; host-numpy-2.5 retrained artifact reverted (pickle incompatibility)
+
+### Pending (requires sudo or Docker)
+- [ ] Reclaim ~30 GB stale Docker build cache: `sudo systemctl restart docker && docker builder prune --all --force`
+- [ ] Rebuild + run full stack (`docker compose up -d --build`) and re-verify /health, MinIO buckets, worker queue after the py3.12 fix
+- [ ] Retrain classifier in-container for an exactly-pinned artifact: `docker compose run --rm backend python -c "from app.services.classification import retrain_model; retrain_model()"`
+
+---
+
 ## END OF PHASE DEFINITIONS

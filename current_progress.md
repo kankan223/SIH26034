@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-06 00:55
+**Last Updated (UTC):** 2026-09-07 17:10
 **Current Phase:** COMPLETE — All 9 Phases Done
-**Current Subphase:** N/A
-**Current Task:** N/A
+**Current Subphase:** Post-completion maintenance (ops hardening)
+**Current Task:** Host-side model training verified (33/33 tests); OPERATING_AND_TRAINING_GUIDE.md written; Docker build fixed for Python 3.12
 
 ---
 
@@ -86,6 +86,9 @@
 | 2026-09-06 00:46 | 9.4 | requirements.txt: pin pillow 12.3.0, starlette 1.3.1, ecdsa 0.19.2 per pip-audit PYSEC findings | backend/requirements.txt | VERIFIED | 10 PYSEC findings addressed (pillow: PYSEC-2026-2253/2255/2256/3451/3453/3454/3493/3494/3495/3496; starlette: PYSEC-2026-161/1941/1942/2280/2281/248/249; ecdsa: PYSEC-2026-1325) | npm audit: 2 moderate in react-router-dom (CVE-2025-68470) — major bump to v7 required; documented as known issue, not auto-fixed to avoid breaking change | AI Agent |
 | 2026-09-06 00:50 | 9.5 | Full regression: 540 backend + 58 frontend = 598 tests all passing; tsc 0 errors; build OK | All test files | VERIFIED | Backend 540/540 in 65.2s; frontend 58/58 in 14.5s; tsc 0 errors; build OK (4 SW entries) | No regressions after requirements pin update | AI Agent |
 | 2026-09-06 00:55 | 9.6 | Security sweep: 0 hardcoded secrets, 0 TODO/FIXME/XXX, 0 hardcoded hex colors in production code | All source files | VERIFIED | grep scan: only config.py/security.py/storage.py/audit.py/test files reference secret names via settings.X (no literal values); TODO/FIXME/XXX grep returns empty; hex color grep returns empty outside tokens.css | No blockers | AI Agent |
+| 2026-09-07 17:05 | Ops | OPERATING_AND_TRAINING_GUIDE.md created: Windows migration, Docker/native/demo startup paths, dataset acquisition + ML training procedures, verification checklist, troubleshooting | OPERATING_AND_TRAINING_GUIDE.md | VERIFIED | Guide covers classifier (auto-train), YOLOv8n ONNX retraining, PaddleOCR en/hi models | Demo compose port map corrected (frontend on :80) | AI Agent |
+| 2026-09-07 17:08 | Ops | Docker build chain fixed: base image python:3.13-slim → 3.12-slim (prebuilt cp312 wheels for numpy 1.26.4/paddle/torch stack), libjpeg-dev added, --reload removed from container CMD; paddleocr 2.9.1 + paddlepaddle 3.3.x + onnxruntime 1.29.0 pins aligned; starlette range fix | backend/Dockerfile, backend/requirements.txt | VERIFIED | Full image build completed (backend 3.82 GB incl. paddle+torch); build killed at final unpack due to disk-full (97%) — images tagged but unpack incomplete | Disk incident: build cache bloat freed ~19 GB (107→88 GB used); remaining ~30 GB stale cache needs sudo restart (see Technical Debt) | AI Agent |
+| 2026-09-07 17:10 | ML | Host-side classifier training verified without Docker: venv (py3.13, sklearn 1.5.2/joblib 1.4.2 pins), retrain_model() trained 89 samples × 8 classes, artifact saved, inference 6.9 ms (<50 ms target per prd.md §10.2) | .venv/ (gitignored, not committed), backend/ml/models/product_classifier.joblib (left at committed version) | VERIFIED | test_classification.py: 33/33 PASS including artifact load/predict, <50 ms inference, <10 s retrain | Committed artifact kept (numpy 1.26-compatible for Docker); host-retrained artifact reverted — numpy 2.5 pickles break under Docker numpy 1.26.4 | AI Agent |
 
 ---
 
@@ -115,6 +118,8 @@
 | PWA icons are placeholders | `icon-192.png` and `icon-512.png` are empty stubs; `icons/README.md` documents the gap | MEDIUM | Replace with real Docket-branded PNGs before Grand Finale demo (20 Sep). Generate from `Layout.tsx` wordmark or source from design team. |
 | react-router-dom npm audit (2 moderate) | CVE-2025-68470 (open redirect via backslash) affects react-router-dom 6.x; fix requires major bump to v7 (breaking change) | LOW | Acceptable risk for SIH demo scope; document as known issue. Upgrade to v7 post-SIH if needed. |
 | vitest.config.ts vs vitest.config.test.ts | Two vitest configs exist | LOW | Not blocking. Consolidate if time permits. |
+| Docker build cache flagged "in-use" (~30 GB) | Killed builds left 130 build-cache records marked in-use; `docker builder prune --all` reclaims 0B while flags are stale | MEDIUM | Requires one sudo action: `sudo systemctl restart docker && docker builder prune --all --force` (reclaims ~30 GB). Docker Root Dir /var/lib/docker is root-only, agent user cannot prune without sudo. |
+| Classifier artifact sklearn metadata mismatch | Committed product_classifier.joblib was pickled under sklearn 1.9 (host) while Docker pins 1.5.2 — loads with InconsistentVersionWarning (functional, verified 33/33 tests) | LOW | On next Docker rebuild, retrain in-container for an exactly-pinned artifact: `docker compose run --rm backend python -c "from app.services.classification import retrain_model; retrain_model()"`. Code auto-retrains on load failure (graceful fallback in `_get_model`). Do NOT commit artifacts saved under host numpy 2.5 — they reference numpy._core and fail to load under Docker's numpy 1.26.4. |
 
 ---
 
