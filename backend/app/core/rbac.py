@@ -10,7 +10,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.core.config import settings
 from app.core.security import verify_token
 
-security = HTTPBearer()
+# auto_error=False: HTTPBearer's default 403-on-missing violates prd.md §25.2,
+# which requires 401 for missing/invalid credentials. We raise 401 explicitly below.
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -20,6 +22,12 @@ async def get_current_user(
 
     Raises 401 if token is missing, invalid, or expired.
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     token = credentials.credentials
     try:
         payload = verify_token(token)

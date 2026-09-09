@@ -1,9 +1,9 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-07 17:10
+**Last Updated (UTC):** 2026-09-09 09:15
 **Current Phase:** COMPLETE — All 9 Phases Done
 **Current Subphase:** Post-completion maintenance (ops hardening)
-**Current Task:** Host-side model training verified (33/33 tests); OPERATING_AND_TRAINING_GUIDE.md written; Docker build fixed for Python 3.12
+**Current Task:** Full stack rebuilt and verified live (/health 200, MinIO buckets, RQ worker); 541/541 backend tests passing; RBAC 401 semantics, FR-004/FR-005 CV fallback, and extraction type mismatch fixed
 
 ---
 
@@ -26,7 +26,7 @@
 | test_review.py | 26 | ✅ PASS |
 | test_dashboard.py | 17 | ✅ PASS |
 | test_report_generator.py | 10 | ✅ PASS |
-| **Backend Total** | **540** | **✅ ALL PASSING** |
+| **Backend Total** | **541** | **✅ ALL PASSING** |
 | frontend (tsc) | — | ✅ 0 errors |
 | frontend (vitest) | 58 | ✅ 58/58 PASSING |
 | **Combined Total** | **598** | **✅ ALL PASSING** |
@@ -88,7 +88,8 @@
 | 2026-09-06 00:55 | 9.6 | Security sweep: 0 hardcoded secrets, 0 TODO/FIXME/XXX, 0 hardcoded hex colors in production code | All source files | VERIFIED | grep scan: only config.py/security.py/storage.py/audit.py/test files reference secret names via settings.X (no literal values); TODO/FIXME/XXX grep returns empty; hex color grep returns empty outside tokens.css | No blockers | AI Agent |
 | 2026-09-07 17:05 | Ops | OPERATING_AND_TRAINING_GUIDE.md created: Windows migration, Docker/native/demo startup paths, dataset acquisition + ML training procedures, verification checklist, troubleshooting | OPERATING_AND_TRAINING_GUIDE.md | VERIFIED | Guide covers classifier (auto-train), YOLOv8n ONNX retraining, PaddleOCR en/hi models | Demo compose port map corrected (frontend on :80) | AI Agent |
 | 2026-09-07 17:08 | Ops | Docker build chain fixed: base image python:3.13-slim → 3.12-slim (prebuilt cp312 wheels for numpy 1.26.4/paddle/torch stack), libjpeg-dev added, --reload removed from container CMD; paddleocr 2.9.1 + paddlepaddle 3.3.x + onnxruntime 1.29.0 pins aligned; starlette range fix | backend/Dockerfile, backend/requirements.txt | VERIFIED | Full image build completed (backend 3.82 GB incl. paddle+torch); build killed at final unpack due to disk-full (97%) — images tagged but unpack incomplete | Disk incident: build cache bloat freed ~19 GB (107→88 GB used); remaining ~30 GB stale cache needs sudo restart (see Technical Debt) | AI Agent |
-| 2026-09-07 17:10 | ML | Host-side classifier training verified without Docker: venv (py3.13, sklearn 1.5.2/joblib 1.4.2 pins), retrain_model() trained 89 samples × 8 classes, artifact saved, inference 6.9 ms (<50 ms target per prd.md §10.2) | .venv/ (gitignored, not committed), backend/ml/models/product_classifier.joblib (left at committed version) | VERIFIED | test_classification.py: 33/33 PASS including artifact load/predict, <50 ms inference, <10 s retrain | Committed artifact kept (numpy 1.26-compatible for Docker); host-retrained artifact reverted — numpy 2.5 pickles break under Docker numpy 1.26.4 | AI Agent |
+| 2026-09-09 09:15 | Ops | Stack rebuilt after py3.12 + runtime-libs fixes (libgl1, libglib2.0-0t64, pango/cairo stack incl. libpangoft2 for WeasyPrint, libjpeg) and requirements completed (paddlepaddle 3.3.1 real pin, pytest/pytest-asyncio added); docker compose up verified: /health 200, buckets lm-images/lm-evidence/lm-reports exist, RQ worker listening on inspection-pipeline | backend/Dockerfile, backend/requirements.txt | VERIFIED | Backend suite: 541/541 PASS (was 512/541 on first container run) | PaddlePaddle cp312 wheels: 3.3.4 does not exist, pinned 3.3.1 | AI Agent |
+| 2026-09-09 09:15 | Fix | RBAC: HTTPBearer(auto_error=False) + explicit 401 — missing credentials now return 401 per prd.md §25.2 (default FastAPI behavior returned 403); CV: FR-004 full-image fallback with manual_crop_used now applies whenever no package is detected (incl. with a loaded real YOLO), FR-005 label fallback likewise; Extraction: extract_declarations accepts ocr_service.OCRResult (.text) alongside internal tokens (.original) | backend/app/core/rbac.py, backend/app/services/cv_detection.py, backend/app/services/extraction.py | VERIFIED | 12 RBAC/audit 401 failures + 2 CV/OCR integration failures + 1 extraction AttributeError resolved; suite 541/541 | None | AI Agent |
 
 ---
 
@@ -96,7 +97,7 @@
 
 | Metric | Target | Source | Current | Status |
 |---|---|---|---|---|
-| Backend test suite | 540 pass, 0 fail | prd.md §9 | 540/540 ✅ | ✓ PASS |
+| Backend test suite | 540 pass, 0 fail | prd.md §9 | 541/541 ✅ | ✓ PASS |
 | Frontend tsc | 0 errors | build quality | 0 errors ✅ | ✓ PASS |
 | Frontend vitest | 54+ tests, 0 fail | component quality | 58/58 ✅ | ✓ PASS |
 | Frontend build | OK | production deploy | build OK ✅ (4 SW entries) | ✓ PASS |

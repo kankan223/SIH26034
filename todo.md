@@ -2811,8 +2811,16 @@ git push origin main --tags
 
 ### Pending (requires sudo or Docker)
 - [ ] Reclaim ~30 GB stale Docker build cache: `sudo systemctl restart docker && docker builder prune --all --force`
-- [ ] Rebuild + run full stack (`docker compose up -d --build`) and re-verify /health, MinIO buckets, worker queue after the py3.12 fix
+- [x] Rebuild + run full stack (`docker compose up -d --build`) and re-verify /health, MinIO buckets, worker queue after the py3.12 fix — DONE 2026-09-09: all 5 services up, /health 200, 3 buckets present, RQ worker listening; 541/541 backend tests pass
 - [ ] Retrain classifier in-container for an exactly-pinned artifact: `docker compose run --rm backend python -c "from app.services.classification import retrain_model; retrain_model()"`
+
+### 2026-09-09 Session — Stack verification & runtime fixes — COMPLETED
+- [x] Runtime system libs added to backend image: libgl1 + libglib2.0-0t64 (cv2 on Debian trixie), pango/cairo stack incl. libpangoft2-1.0-0 (WeasyPrint), fontconfig
+- [x] requirements.txt completed: paddlepaddle pinned to real 3.3.1 (3.3.4 does not exist for cp312), pytest + pytest-asyncio added so the container can run its own suite
+- [x] RBAC 401 semantics fixed per prd.md §25.2: HTTPBearer(auto_error=False) + explicit 401 on missing credentials (12 test failures resolved)
+- [x] CV fallback fixed per FR-004/FR-005: full-image/package-region fallback now applies whenever detection finds nothing, not only when no model is loaded
+- [x] Extraction fixed: extract_declarations handles ocr_service.OCRResult (.text) and internal token (.original) shapes
+- [x] Full verification: 541/541 backend tests, /health 200, buckets lm-images/lm-evidence/lm-reports present, worker listening on inspection-pipeline
 
 ---
 

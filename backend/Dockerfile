@@ -5,6 +5,16 @@ RUN apt-get update && \
     build-essential \
     libpq-dev \
     libjpeg-dev \
+    libgl1 \
+    libglib2.0-0t64 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    libpangoxft-1.0-0 \
+    libharfbuzz0b \
+    libgdk-pixbuf-2.0-0 \
+    libffi8 \
+    fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

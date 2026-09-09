@@ -13,6 +13,7 @@ Test coverage:
 
 import pytest
 from datetime import date, datetime, timezone
+from typing import Any
 from unittest.mock import MagicMock, AsyncMock
 
 from app.schemas.rule import (

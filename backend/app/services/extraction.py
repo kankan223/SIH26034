@@ -657,8 +657,11 @@ def extract_declarations(
     if normalized_tokens is None:
         normalized_tokens = normalize_text(ocr_results)
 
-    # Combine all text for context
-    all_text = " ".join(t.original for t in ocr_results) if ocr_results else ""
+    # Combine all text for context (ocr_service.OCRResult exposes .text;
+    # older internal token objects expose .original)
+    all_text = " ".join(
+        (getattr(t, "original", None) or getattr(t, "text", "")) for t in ocr_results
+    ) if ocr_results else ""
 
     # Stage 2: Extract declarations
     declarations = []

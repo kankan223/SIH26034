@@ -1,5 +1,6 @@
 """Seed initial rule versions per prd.md §12.6."""
 
+import json
 import uuid
 from datetime import date
 from sqlalchemy import text
@@ -144,7 +145,7 @@ async def seed_rules(session: AsyncSession) -> int:
                 "id": version_id,
                 "rule_id": rule_id,
                 "version": rule_data["version"],
-                "content": rule_data["content"],
+                "content": json.dumps(rule_data["content"]),
                 "legal_reference": rule_data["legal_reference"],
                 "effective_date": rule_data["effective_date"],
             },
