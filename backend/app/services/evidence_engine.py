@@ -72,9 +72,12 @@ async def generate_evidence_for_violations(
     Returns:
         Number of evidence objects created.
     """
-    # Find the source image for this inspection
+    # Find the source image for this inspection (latest upload wins if several)
     img_result = await db.execute(
-        select(Image).where(Image.inspection_id == inspection_id)
+        select(Image)
+        .where(Image.inspection_id == inspection_id)
+        .order_by(Image.uploaded_at.desc())
+        .limit(1)
     )
     image = img_result.scalar_one_or_none()
 

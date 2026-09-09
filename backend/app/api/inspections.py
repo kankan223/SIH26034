@@ -1,6 +1,7 @@
 """Inspection CRUD endpoints per prd.md §21."""
 
 import hashlib
+import json
 import uuid
 from typing import Optional
 
@@ -259,9 +260,34 @@ async def upload_image(
     # Compute content hash
     content_hash = hashlib.sha256(content).hexdigest()
 
-    # Generate storage URL (in a real system, this would upload to MinIO)
-    # For now, we store a reference URL
-    storage_url = f"minio://docket-images/{inspection_id}/{content_hash[:16]}.jpg"
+    # Content-hash deduplication per FR-001: if this exact content was already
+    # uploaded, link to the existing record instead of creating a duplicate.
+    async with session_factory() as session:
+        existing = await session.execute(
+            text("SELECT id, inspection_id, storage_url, content_hash, quality_score, quality_issues FROM images WHERE content_hash = :h"),
+            {"h": content_hash},
+        )
+        dup = existing.fetchone()
+
+    if dup is not None:
+        await engine.dispose()
+        dup_issues = dup.quality_issues if isinstance(dup.quality_issues, list) else json.loads(dup.quality_issues) if dup.quality_issues else []
+        return ImageResponse(
+            id=str(dup.id),
+            inspection_id=str(dup.inspection_id),
+            storage_url=dup.storage_url,
+            content_hash=dup.content_hash,
+            quality_score=dup.quality_score,
+            quality_issues=dup_issues,
+        )
+
+    # Upload to MinIO with dedup + EXIF strip per FR-001 / prd.md §25.5
+    from app.services import storage as storage_service
+    try:
+        storage_url = storage_service.upload_image(content, content_hash)
+    except Exception as e:
+        await engine.dispose()
+        raise HTTPException(status_code=502, detail=f"Object storage upload failed: {e}")
 
     # Run image quality assessment per prd.md §10.1 and FR-003
     try:
@@ -287,7 +313,7 @@ async def upload_image(
                 "storage_url": storage_url,
                 "content_hash": content_hash,
                 "quality_score": quality_score,
-                "quality_issues": quality_issues,
+                "quality_issues": json.dumps(quality_issues) if quality_issues is not None else None,
             },
         )
         await session.commit()

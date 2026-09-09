@@ -18,6 +18,7 @@ Each stage is independent and can be retried individually.
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Optional
+import asyncio
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -299,7 +300,7 @@ async def stage_rule_evaluation(
     Returns list of RuleVerdict objects, each referencing exact
     rule_versions.id for auditability.
     """
-    verdicts = evaluate_all_rules(
+    verdicts = await evaluate_all_rules(
         db=db,
         category=category,
         inspection_date=inspection_date,
@@ -446,9 +447,11 @@ async def run_analysis_pipeline(
             f"Issues: {', '.join(quality.quality_issues)}"
         )
 
-    # Upload image to MinIO (always, even if quality is low)
+    # Upload image to MinIO (always, even if quality is low).
+    # upload_image is a synchronous (blocking) MinIO call — run it in a
+    # thread so the async event loop isn't blocked.
     content_hash = _compute_hash(image_bytes)
-    storage_url = await upload_image(image_bytes, content_hash)
+    storage_url = await asyncio.to_thread(upload_image, image_bytes, content_hash)
 
     # Stage 2: CV detection
     detection = await stage_cv_detection(image_bytes)

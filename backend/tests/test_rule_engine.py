@@ -10,6 +10,8 @@ Tests cover:
 - Rule version reference in every verdict
 """
 
+import asyncio
+
 import pytest
 from datetime import date
 from unittest.mock import MagicMock, AsyncMock
@@ -70,11 +72,11 @@ def make_declaration(
 def make_empty_db_session() -> AsyncMock:
     """Create a mock AsyncSession that returns empty results."""
     session = AsyncMock()
-    # Mock execute to return empty result
+    # Mock execute to return empty result (execute is awaited → AsyncMock)
     mock_result = MagicMock()
     mock_result.unique = MagicMock(return_value=mock_result)
     mock_result.all = MagicMock(return_value=[])
-    session.execute = MagicMock(return_value=mock_result)
+    session.execute = AsyncMock(return_value=mock_result)
     return session
 
 
@@ -86,7 +88,7 @@ def make_db_session_with_rules(
     mock_result = MagicMock()
     mock_result.unique = MagicMock(return_value=mock_result)
     mock_result.all = MagicMock(return_value=rules)
-    session.execute = MagicMock(return_value=mock_result)
+    session.execute = AsyncMock(return_value=mock_result)
     return session
 
 
@@ -292,13 +294,13 @@ def make_mock_rule_version(
 class TestGetApplicableRules:
     """Tests for get_applicable_rules() function."""
 
-    def test_no_rules_in_database(self):
+    async def test_no_rules_in_database(self):
         """Empty database → empty list."""
         session = make_empty_db_session()
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert result == []
 
-    def test_rule_effective_before_inspection_date(self):
+    async def test_rule_effective_before_inspection_date(self):
         """Rule effective before inspection date should be included."""
         rule = make_mock_rule("mrp_format", "MRP Format Rule")
         rv = make_mock_rule_version(
@@ -309,11 +311,11 @@ class TestGetApplicableRules:
             effective_date=date(2026, 1, 1),
         )
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(result) == 1
         assert result[0].rule_key == "mrp_format"
 
-    def test_rule_effective_after_inspection_date(self):
+    async def test_rule_effective_after_inspection_date(self):
         """Rule effective after inspection date should be excluded."""
         rule = make_mock_rule("new_rule", "New Rule")
         rv = make_mock_rule_version(
@@ -321,7 +323,7 @@ class TestGetApplicableRules:
             effective_date=date(2026, 12, 1),  # After inspection
         )
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         # After_date rules are filtered by the SQL query — mock returns them
         # This test verifies the DB-level filtering works. Since mocks bypass
         # actual SQL, we test the function's own filtering.
@@ -330,7 +332,7 @@ class TestGetApplicableRules:
         # Instead: verify the rule IS returned (mock doesn't filter)
         assert len(result) == 1  # Mock returns all, real DB would filter
 
-    def test_rule_matching_wrong_category_excluded(self):
+    async def test_rule_matching_wrong_category_excluded(self):
         """Rule for different category should be excluded."""
         rule = make_mock_rule("food_rule", "Food Rule")
         rv = make_mock_rule_version(
@@ -344,11 +346,11 @@ class TestGetApplicableRules:
         # get_applicable_rules filters by category after DB retrieval.
         # With mocks, DB-level filtering doesn't apply, but the function should
         # still filter by category in Python.
-        result = get_applicable_rules(session, "Personal Care & Cosmetics", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Personal Care & Cosmetics", date(2026, 9, 1))
         # Should be empty because category doesn't match the rule's required categories
         assert len(result) == 0
 
-    def test_rule_matching_correct_category_included(self):
+    async def test_rule_matching_correct_category_included(self):
         """Rule for matching category should be included."""
         rule = make_mock_rule("food_rule", "Food Rule")
         rv = make_mock_rule_version(
@@ -359,10 +361,10 @@ class TestGetApplicableRules:
             effective_date=date(2026, 1, 1),
         )
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(result) == 1
 
-    def test_rule_without_category_filter_included(self):
+    async def test_rule_without_category_filter_included(self):
         """Rule without product_categories filter should be included for any category."""
         rule = make_mock_rule("general_rule", "General Rule")
         rv = make_mock_rule_version(
@@ -373,11 +375,11 @@ class TestGetApplicableRules:
             effective_date=date(2026, 1, 1),
         )
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Personal Care & Cosmetics", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Personal Care & Cosmetics", date(2026, 9, 1))
         assert len(result) == 1
         assert result[0].rule_key == "general_rule"
 
-    def test_rule_with_end_date_before_inspection_excluded(self):
+    async def test_rule_with_end_date_before_inspection_excluded(self):
         """Rule with end_date before inspection should be excluded."""
         rule = make_mock_rule("ended_rule", "Ended Rule")
         rv = make_mock_rule_version(
@@ -386,12 +388,12 @@ class TestGetApplicableRules:
             end_date=date(2026, 6, 1),  # Ends before inspection
         )
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         # The DB-level filter would exclude ended rules. Mock returns all.
         # Test that the mock returns it (DB filtering is tested at integration level)
         assert len(result) == 1  # Mock returns all — DB would filter
 
-    def test_rule_with_null_end_date_included(self):
+    async def test_rule_with_null_end_date_included(self):
         """Rule with NULL end_date should be included."""
         rule = make_mock_rule("active_rule", "Active Rule")
         rv = make_mock_rule_version(
@@ -402,10 +404,10 @@ class TestGetApplicableRules:
         # end_date is a MagicMock (not None) — but it simulates NULL for SQLAlchemy
         assert not isinstance(rv.end_date, date)  # It's a Mock, not a real date
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(result) == 1
 
-    def test_rules_ordered_by_effective_date(self):
+    async def test_rules_ordered_by_effective_date(self):
         """Rules should be ordered by effective_date ascending."""
         rule1 = make_mock_rule("old_rule", "Old Rule")
         rv1 = make_mock_rule_version(
@@ -420,13 +422,13 @@ class TestGetApplicableRules:
             version=1,
         )
         session = make_db_session_with_rules([(rule1, rv1), (rule2, rv2)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(result) == 2
         # First rule should be the older one
         assert result[0].effective_date == date(2025, 1, 1)
         assert result[1].effective_date == date(2026, 6, 1)
 
-    def test_multiple_rules_for_same_category(self):
+    async def test_multiple_rules_for_same_category(self):
         """Multiple rules for same category should all be returned."""
         rules_and_versions = []
         for i in range(3):
@@ -442,10 +444,10 @@ class TestGetApplicableRules:
             rules_and_versions.append((rule, rv))
 
         session = make_db_session_with_rules(rules_and_versions)
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(result) == 3
 
-    def test_rule_content_includes_applies_when(self):
+    async def test_rule_content_includes_applies_when(self):
         """Rule content should include applies_when conditions."""
         rule = make_mock_rule("category_rule", "Category Rule")
         rv = make_mock_rule_version(
@@ -456,11 +458,11 @@ class TestGetApplicableRules:
             effective_date=date(2026, 1, 1),
         )
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(result) == 1
         assert "product_categories" in result[0].content["applies_when"]
 
-    def test_rule_version_id_is_referenced(self):
+    async def test_rule_version_id_is_referenced(self):
         """RuleInstance should carry the exact rule_version_id."""
         rule = make_mock_rule("test_rule", "Test Rule")
         rv = make_mock_rule_version(
@@ -469,7 +471,7 @@ class TestGetApplicableRules:
             version=3,
         )
         session = make_db_session_with_rules([(rule, rv)])
-        result = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        result = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(result) == 1
         assert result[0].rule_version_id == "rv-3"
 
@@ -835,16 +837,16 @@ class TestEvaluateRule:
 class TestEvaluateAllRules:
     """Tests for evaluate_all_rules() convenience function."""
 
-    def test_empty_rule_set_returns_empty_verdicts(self):
+    async def test_empty_rule_set_returns_empty_verdicts(self):
         """No applicable rules → empty verdict list."""
         session = make_empty_db_session()
-        verdicts = evaluate_all_rules(
+        verdicts = await evaluate_all_rules(
             session, "Food & Beverage", date(2026, 9, 1),
             [], product_category="Food & Beverage",
         )
         assert verdicts == []
 
-    def test_multiple_rules_all_evaluated(self):
+    async def test_multiple_rules_all_evaluated(self):
         """Multiple applicable rules all get evaluated."""
         rule1 = make_mock_rule("rule_1", "Rule 1")
         rv1 = make_mock_rule_version(
@@ -869,7 +871,7 @@ class TestEvaluateAllRules:
         decl_manufacturer = make_declaration("manufacturer_name", {"text": "Test Co"})
         decl_net_qty = make_declaration("net_quantity", {"text": "500g"})
 
-        verdicts = evaluate_all_rules(
+        verdicts = await evaluate_all_rules(
             session, "Food & Beverage", date(2026, 9, 1),
             [decl_manufacturer, decl_net_qty],
             product_category="Food & Beverage",
@@ -877,7 +879,7 @@ class TestEvaluateAllRules:
         assert len(verdicts) == 2
         assert all(v.rule_version_id for v in verdicts)  # all have version refs
 
-    def test_mixed_verdicts(self):
+    async def test_mixed_verdicts(self):
         """Some rules PASS, some FAIL — all returned."""
         # Rule 1: presence check for manufacturer (present → PASS)
         rule1 = make_mock_rule("rule_1", "Rule 1")
@@ -901,7 +903,7 @@ class TestEvaluateAllRules:
 
         decl = make_declaration("manufacturer_name", {"text": "Test Co"})
 
-        verdicts = evaluate_all_rules(
+        verdicts = await evaluate_all_rules(
             session, "Food & Beverage", date(2026, 9, 1),
             [decl], product_category="Food & Beverage",
         )
@@ -1035,7 +1037,7 @@ class TestEdgeCases:
 class TestIntegration:
     """Integration-style tests for the full flow."""
 
-    def test_full_evaluation_pipeline(self):
+    async def test_full_evaluation_pipeline(self):
         """Full pipeline: get rules → evaluate → check verdicts."""
         # Create rules for the test
         rule = make_mock_rule("pipeline_test", "Pipeline Test Rule")
@@ -1050,12 +1052,12 @@ class TestIntegration:
         session = make_db_session_with_rules([(rule, rv)])
 
         # Get applicable rules
-        rules = get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
+        rules = await get_applicable_rules(session, "Food & Beverage", date(2026, 9, 1))
         assert len(rules) == 1
 
         # Evaluate
         decl = make_declaration("manufacturer_name", {"text": "Test Manufacturer"})
-        verdicts_list = evaluate_all_rules(
+        verdicts_list = await evaluate_all_rules(
             session, "Food & Beverage", date(2026, 9, 1),
             [decl], product_category="Food & Beverage",
         )

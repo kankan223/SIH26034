@@ -377,7 +377,8 @@ async def persist_violations(
     violations: list[Violation] = []
 
     for i, violation in enumerate(compliance_result.violations):
-        check_id = compliance_check_ids[i] if i < len(compliance_check_ids) else ""
+        check = compliance_check_ids[i] if i < len(compliance_check_ids) else None
+        check_id = getattr(check, "id", check) if check is not None else ""
 
         v = Violation(
             inspection_id=inspection_id,

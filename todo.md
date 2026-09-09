@@ -2822,6 +2822,20 @@ git push origin main --tags
 - [x] Extraction fixed: extract_declarations handles ocr_service.OCRResult (.text) and internal token (.original) shapes
 - [x] Full verification: 541/541 backend tests, /health 200, buckets lm-images/lm-evidence/lm-reports present, worker listening on inspection-pipeline
 
+### 2026-09-09 Session — Live end-to-end demo hardening — COMPLETED
+- [x] audit_service.log_action: dict/list payloads JSON-serialized before insert (asyncpg jsonb DataError resolved)
+- [x] Image upload idempotency per FR-001: duplicate content-hash returns the existing image record instead of 500
+- [x] Rule engine made async-correct: get_applicable_rules/evaluate_all_rules now await DB calls (previously crashed on real AsyncSession)
+- [x] Rule applicability: "ALL" wildcard + parent-category prefix matching in applies_when (seeded rules now evaluate); required_field fallback used when validation.field absent
+- [x] Evidence engine: selects latest image per inspection (MultipleResultsFound fix)
+- [x] Pipeline: blocking MinIO upload offloaded via asyncio.to_thread; persist_violations unwraps ORM ComplianceCheck ids
+- [x] Report generator: falls back to inline 12-section HTML when report.html template file is absent; storage.upload_report takes filename param (PDF + JSON export)
+- [x] pydyf pinned 0.10.0 — WeasyPrint 62.3 is incompatible with pydyf>=0.11 ('super' object has no attribute 'transform')
+- [x] YOLO inference at imgsz=320 → ~63ms CPU per image, well under the 300ms target per prd.md §10.2
+- [x] backend/pytest.ini added (asyncio_mode=auto); rule-engine tests converted to async-native with AsyncMock sessions (58/58 in file)
+- [x] Live E2E demo verified: login → create inspection → upload image (dedup OK) → full pipeline (quality → CV → OCR → 14 declarations → 5 rules → PARTIALLY_COMPLIANT, 2 violations, status flagged) → PDF report (20.5KB, %PDF-1.7, 1.19s) stored in lm-reports
+- [x] Final suite: 541/541 backend tests passing
+
 ---
 
 ## END OF PHASE DEFINITIONS

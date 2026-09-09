@@ -121,7 +121,7 @@ def _build_declaration_map(
     return result
 
 
-def get_applicable_rules(
+async def get_applicable_rules(
     db: AsyncSession,
     category: str,
     inspection_date: date,
@@ -152,16 +152,21 @@ def get_applicable_rules(
         .order_by(RuleVersion.effective_date.asc(), RuleVersion.version.asc())
     )
 
-    result = db.execute(stmt).unique().all()
+    result = (await db.execute(stmt)).unique().all()
 
     instances: list[RuleInstance] = []
     for rule, rv in result:
-        # Check category matching — content may have product_categories list
+        # Check category matching — content may have product_categories list.
+        # The wildcard "ALL" (used by seeded rules) applies to every category.
         content = rv.content or {}
         applies_when = content.get("applies_when", {})
         applicable_categories = applies_when.get("product_categories", [])
-        if applicable_categories and category not in applicable_categories:
-            continue
+        if applicable_categories and "ALL" not in applicable_categories:
+            if category not in applicable_categories and not any(
+                category.startswith(c + " >") or category.endswith(" > " + c) or (" > " + c + " > ") in category
+                for c in applicable_categories
+            ):
+                continue
 
         # Check package_type filter if present (skip for now — handled in evaluate_rule)
         # package_type_filter = content.get("package_type")
@@ -209,10 +214,13 @@ def evaluate_rule(
 
     # ── Step 1: Check applies_when conditions ─────────────────────────────
 
-    # Category matching
+    # Category matching — "ALL" wildcard applies to every category
     required_categories = applies_when.get("product_categories", [])
-    if required_categories:
-        if product_category not in required_categories:
+    if required_categories and "ALL" not in required_categories:
+        if product_category not in required_categories and not any(
+            product_category.startswith(c + " >") or (" > " + c + " > ") in product_category
+            for c in required_categories
+        ):
             return RuleVerdict(
                 rule_version_id=rule_instance.rule_version_id,
                 rule_key=rule_instance.rule_key,
@@ -261,7 +269,9 @@ def evaluate_rule(
         )
 
     validation_type = validation.get("type", "presence_only")
-    field_to_check = validation.get("field", "")
+    # Seeded rules store the target declaration under "required_field";
+    # fall back to "field" for hand-authored rule content.
+    field_to_check = validation.get("field") or content.get("required_field", "")
 
     if validation_type == "regex_and_presence":
         return _eval_regex_and_presence(
@@ -453,7 +463,7 @@ def _eval_format_check(
     )
 
 
-def evaluate_all_rules(
+async def evaluate_all_rules(
     db: AsyncSession,
     category: str,
     inspection_date: date,
@@ -479,7 +489,7 @@ def evaluate_all_rules(
     Returns:
         List of RuleVerdict objects.
     """
-    rules = get_applicable_rules(db, category, inspection_date)
+    rules = await get_applicable_rules(db, category, inspection_date)
     verdicts: list[RuleVerdict] = []
 
     for rule in rules:

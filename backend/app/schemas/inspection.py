@@ -45,4 +45,4 @@ class ImageResponse(BaseModel):
     storage_url: str
     content_hash: str
     quality_score: Optional[float] = None
-    quality_issues: Optional[dict[str, Any]] = None
+    quality_issues: Optional[list[str]] = None

@@ -27,7 +27,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 from weasyprint import HTML
 
 from app.core.config import settings
@@ -101,23 +101,33 @@ def generate_report(
 
     start = time.time()
 
-    # ── Render PDF via Jinja2 → WeasyPrint ───────────────────────────────────
+    # ── Render PDF via WeasyPrint ────────────────────────────────────
 
-    template = _get_template("report.html")
-
-    # Determine if verification seal should be shown
+    # Use the report.html template when present; otherwise fall back to
+    # the inline 12-section HTML generator so report generation still
+    # works without a templates directory on disk.
     is_compliant = compliance_result.get("overall_status") == "COMPLIANT"
-
-    html_content = template.render(
-        inspection=inspection_data,
-        compliance=compliance_result,
-        images=image_urls,
-        evidence=evidence_crops,
-        legal_references=legal_references,
-        show_seal=is_compliant,
-        generated_at=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        design_tokens=_get_design_tokens(),
-    )
+    try:
+        template = _get_template("report.html")
+        html_content = template.render(
+            inspection=inspection_data,
+            compliance=compliance_result,
+            images=image_urls,
+            evidence=evidence_crops,
+            legal_references=legal_references,
+            show_seal=is_compliant,
+            generated_at=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            design_tokens=_get_design_tokens(),
+        )
+    except TemplateNotFound:
+        html_content = _generate_report_html(
+            inspection=inspection_data,
+            compliance=compliance_result,
+            images=image_urls,
+            evidence=evidence_crops,
+            legal_references=legal_references,
+            show_seal=is_compliant,
+        )
 
     # Generate PDF
     pdf_bytes = HTML(string=html_content).write_pdf()

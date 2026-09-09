@@ -4,6 +4,7 @@ Append-only logging of every state-changing action.
 No UPDATE/DELETE grants for the application DB role.
 """
 
+import json
 import uuid
 from datetime import datetime
 from typing import Any, Optional
@@ -47,6 +48,10 @@ async def log_action(
     engine, session_factory = _get_engine_and_session()
     log_id = str(uuid.uuid4())
 
+    # Raw-SQL params: asyncpg requires jsonb values as JSON strings, not dicts
+    before_json = json.dumps(before_value) if before_value is not None else None
+    after_json = json.dumps(after_value) if after_value is not None else None
+
     try:
         async with session_factory() as session:
             await session.execute(
@@ -60,8 +65,8 @@ async def log_action(
                     "action": action,
                     "entity_type": entity_type,
                     "entity_id": entity_id,
-                    "before_value": before_value,
-                    "after_value": after_value,
+                    "before_value": before_json,
+                    "after_value": after_json,
                     "reason": reason,
                 },
             )

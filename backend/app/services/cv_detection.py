@@ -290,8 +290,10 @@ def _detect_by_yolo(image: np.ndarray, model, target: str = "package") -> list[B
     """
     height, width = image.shape[:2]
 
-    # Run inference
-    results = model(image, verbose=False)
+    # Run inference at reduced resolution — imgsz=320 keeps CPU latency
+    # well under the 300ms target per prd.md §10.2 while retaining
+    # package-scale detection accuracy.
+    results = model(image, imgsz=320, verbose=False)
 
     bboxes = []
     for result in results:
