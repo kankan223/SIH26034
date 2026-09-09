@@ -2852,6 +2852,20 @@ git push origin main --tags
 - [x] Tests: +5 real-detector tests (model installed, class set, package/label IoU ≥0.6/0.5 on in-domain renders, FR-004 manual-crop flag on out-of-domain frames), auto-skip when weights absent; suite 546/546
 - [x] Live verification: /health 200; backend loads fine-tuned ONNX; package @ 0.971 + label @ 0.971 conf on in-domain photo; steady-state ≈85ms (<300ms per prd.md §10.2)
 
+### 2026-09-09 Session — Real photo acquisition + auto-annotation (Task 3.1.1 real-photo pipeline) — COMPLETED
+- [x] Real photo fetcher: ml/training/fetch_real_photos.py pulls open-licensed package photos from Wikimedia Commons (append-safe, with per-file license/artist/source credits written to ml/data/real/CREDITS.md + manifest.json)
+- [x] Auto-annotator: ml/training/annotate_real_photos.py uses YOLO-World zero-shot (concrete vocabulary: box/carton/bottle/can/packet/pouch/jar/tube + label/sticker) cross-checked against the fine-tuned detector; QC rejects blurry/monochrome/package-less frames; multi-package images supported; val pool restricted to strict-confidence (≥0.45) or cross-model-agreed annotations
+- [x] Combined dataset builder: ml/training/build_combined_dataset.py merges synthetic + real train pools; val = real strict pool + synthetic subsample
+- [x] Real eval harness: ml/training/eval_real.py standalone onnxruntime evaluator (no ultralytics AutoBackend op dependency), per-class AP50/mAP50 on the real split, used to compare checkpoints
+- [x] Corpus captured: 111 open-licensed real photos fetched (gems, shampoos, milk cartons, cereal boxes, etc.); 61 accepted by auto-annotator → 49 real train + 12 real-val (strict pool); contact sheet rendered for manual review
+- [x] Three retrain checkpoints built and all compared on the real split (12 images / 39 GT boxes):
+  - OLD (synthetic-only): mAP50 0.860, mAP(50-95) 0.662, P 0.835, R 0.713
+  - NEW2 (noisy low-conf self-training, all 61): mAP50 0.741, mAP(50-95) 0.474
+  - NEW3 (strict-pool self-training, 23 images): mAP50 0.789, mAP(50-95) 0.511, P 0.679, R 0.770
+- [x] DECISION: keep the synthetic-only model as the installed runtime (highest real mAP50 + best box quality); self-training on auto-labels hurt box quality (mAP50-95 dropped 0.662→0.511), so future real-photo retraining must use higher-quality annotations (manual contact-sheet review / better per-image labels) before retraining
+- [x] Train3 checkpoint exported + enriched-metadata installed to /app/tmp_new3_onnx.onnx (for retraining-guide reference); production ONNX stays at ml/models/package_label_detector.onnx (OLD model)
+- [x] README updated in ml/training/README.md: full real-photo pipeline documented (fetch → annotate → combine → train → eval_real.py comparison); credits-not-committed note included
+
 ---
 
 ## END OF PHASE DEFINITIONS
