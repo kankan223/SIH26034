@@ -51,6 +51,10 @@ docker-compose.override.yml
 ml/models/*.onnx
 ml/models/*.joblib
 
+# Detector training artifacts (regenerable via ml/training/)
+**/ml/data/
+**/runs/
+
 # Test / Coverage
 htmlcov/
 .coverage

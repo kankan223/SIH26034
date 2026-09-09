@@ -17,6 +17,11 @@ opencv-python-headless==4.10.0.84
 torch==2.14.0+cpu
 ultralytics==8.3.14
 onnxruntime==1.29.0
+
+# Detector ONNX export (legacy TorchScript exporter; onnxscript deliberately
+# omitted — its newer versions force numpy>=2, breaking cv2/paddleocr pins)
+onnx>=1.16,<1.23
+onnxslim>=0.1.30
 paddleocr==2.9.1
 paddlepaddle==3.3.1  # max available for cp312; paddleocr 2.9.1 requires paddlepaddle 3.3.x
 scikit-learn==1.5.2

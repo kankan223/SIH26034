@@ -2842,6 +2842,16 @@ git push origin main --tags
 - [x] test_cv_detection.py: latency test and multi-detection test use warm-up call + median-of-3 so the one-time YOLO model load (~6s) and page-cache cold start are excluded from steady-state measurement
 - [x] Quiet-machine verification (load avg ~1.0): all 7 perf tests pass; full suite 541/541
 
+### 2026-09-09 Session — Real fine-tuned package/label detector (Task 3.1.1 upgrade) — COMPLETED
+- [x] Mock removed: _DummyYolo ONNX stub and pretrained-COCO fallback path deleted from cv_detection.py
+- [x] Labeled dataset pipeline: ml/training/generate_dataset.py renders 260 train / 60 val package photos (package + PDP label classes, YOLO format) with realistic augmentation (exposure, blur, noise, tilt, clutter)
+- [x] Fine-tuning pipeline: ml/training/train_detector.py (yolov8n @ 416px, CPU, small-dataset settings) — val mAP50 0.995, precision 0.999, recall 1.000 (acceptance ≥0.85 met)
+- [x] ONNX export without dependency churn: legacy TorchScript exporter (dynamo=False) + onnxslim + {0: package, 1: label} metadata; onnx<1.23 + onnxslim pinned; onnxscript deliberately omitted (forces numpy≥2, breaking cv2/paddleocr)
+- [x] Runtime wired: cv_detection.py loads ml/models/package_label_detector.onnx via onnxruntime (letterbox, (1,4+nc,N) decode, class-aware NMS, conf ≥0.5 per prd.md §10.4); model_used reports yolo_v8n_finetuned
+- [x] detect_label: inference on the full frame (training domain — tight package crops starve the model), results clipped to the package region; FR-004/FR-005 fallbacks unchanged
+- [x] Tests: +5 real-detector tests (model installed, class set, package/label IoU ≥0.6/0.5 on in-domain renders, FR-004 manual-crop flag on out-of-domain frames), auto-skip when weights absent; suite 546/546
+- [x] Live verification: /health 200; backend loads fine-tuned ONNX; package @ 0.971 + label @ 0.971 conf on in-domain photo; steady-state ≈85ms (<300ms per prd.md §10.2)
+
 ---
 
 ## END OF PHASE DEFINITIONS

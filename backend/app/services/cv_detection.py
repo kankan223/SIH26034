@@ -1,22 +1,26 @@
 """Computer vision detection service per prd.md §10.2 and FR-004/FR-005.
 
-YOLOv8n-based package and label region detection:
+Fine-tuned YOLOv8n package and label region detection:
 - detect_package(): locates package boundary in frame (FR-004)
 - detect_label(): locates label/principal-display-panel within package (FR-005)
 - Confidence threshold ≥0.5 per prd.md §10.4
 - Fallback: full-image OCR when no package detected (manual_crop_used flag)
-- CPU inference ~150-300ms per prd.md §10.2
+- CPU inference <300ms per prd.md §10.2
 
-Uses OpenCV for image processing and optional Ultralytics YOLOv8 for inference.
-When YOLO model is not available, falls back to contour-based detection
+The runtime model is a YOLOv8n fine-tuned on labeled package photos
+(training pipeline: ml/training/), exported to ONNX and installed at
+ml/models/package_label_detector.onnx with classes {0: package, 1: label}.
+When the model file is absent, falls back to contour-based detection
 for development/testing purposes.
 """
 
+import ast
 import io
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Optional
+from pathlib import Path
+from typing import Any, Optional
 
 import cv2
 import numpy as np
@@ -103,51 +107,81 @@ class DetectionResult:
 # Model loading
 # ---------------------------------------------------------------------------
 
-_model = None
+_onnx_session = None
+_onnx_names: dict[int, str] = {}
+_onnx_imgsz: int = 416
+_ultra_model = None
+
+
+def _candidate_model_paths() -> list[Path]:
+    """Model lookup order: configured path first, then code-relative default.
+
+    The code-relative path mirrors the product classifier (ml/models/) so the
+    model is found both on the host (backend/ml/models/) and in containers
+    where backend/ is bind-mounted at /app.
+    """
+    paths: list[Path] = []
+    configured = getattr(settings, "YOLO_MODEL_PATH", None)
+    if configured:
+        paths.append(Path(configured))
+    backend_root = Path(__file__).resolve().parents[2]  # app/services -> app -> backend
+    paths.append(backend_root / "ml" / "models" / "package_label_detector.onnx")
+    return paths
+
+
+def _parse_onnx_names(session) -> dict[int, str]:
+    """Extract class names from Ultralytics ONNX metadata (falls back to defaults)."""
+    try:
+        for meta in session.get_modelmeta().custom_metadata_map.items():
+            if meta[0] == "names":
+                return {int(k): v for k, v in ast.literal_eval(meta[1]).items()}
+    except Exception as e:  # pragma: no cover - metadata should always exist
+        logger.warning(f"Could not parse ONNX class metadata: {e}")
+    return {0: "package", 1: "label"}
 
 
 def _load_yolo_model():
-    """Load YOLOv8n model (ONNX or Ultralytics).
+    """Load the fine-tuned package/label detector.
 
-    Tries to load from:
-    1. ONNX file at YOLO_MODEL_PATH (production)
-    2. Ultralytics YOLOv8n pretrained (development)
-    3. Returns None if neither available (fallback mode)
+    Tries, in order:
+    1. ONNX detector via onnxruntime (production path; ml/models/...onnx)
+    2. Ultralytics checkpoint (development; e.g. fine-tuned best.pt)
+    3. Returns None if neither available (contour fallback mode)
     """
-    global _model
+    global _onnx_session, _onnx_names, _onnx_imgsz, _ultra_model
 
-    if _model is not None:
-        return _model
+    if _onnx_session is not None or _ultra_model is not None:
+        return _onnx_session or _ultra_model
 
-    model_path = getattr(settings, "YOLO_MODEL_PATH", None)
-
-    # Try ONNX first
-    if model_path and model_path.endswith(".onnx"):
+    # 1. Fine-tuned ONNX model via onnxruntime
+    for model_path in _candidate_model_paths():
+        if not model_path.is_file():
+            continue
         try:
             import onnxruntime as ort
-            _model = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
-            logger.info(f"Loaded YOLO model from ONNX: {model_path}")
-            # ONNX Runtime InferenceSession is not callable like ultralytics YOLO.
-            # We don't bundle a real detection model in the image, so replace with a
-            # dummy callable that returns no boxes. This keeps the callable interface
-            # intact for downstream code and lets contour fallback / tests work.
-            class _DummyYolo:
-                def __call__(self, img, verbose=False):
-                    from types import SimpleNamespace
-                    ns = SimpleNamespace()
-                    ns.boxes = None
-                    return [ns]
-            _model = _DummyYolo()
-            return _model
-        except Exception as e:
-            logger.warning(f"Failed to load ONNX model: {e}")
 
-    # Try Ultralytics
+            _onnx_session = ort.InferenceSession(
+                str(model_path), providers=["CPUExecutionProvider"]
+            )
+            _onnx_names = _parse_onnx_names(_onnx_session)
+            # Input shape is (1, 3, H, W); use H as the inference imgsz
+            input_shape = _onnx_session.get_inputs()[0].shape
+            _onnx_imgsz = int(input_shape[2]) if isinstance(input_shape[2], int) else 416
+            logger.info(
+                f"Loaded fine-tuned YOLO detector from {model_path} "
+                f"(classes={_onnx_names}, imgsz={_onnx_imgsz})"
+            )
+            return _onnx_session
+        except Exception as e:
+            logger.warning(f"Failed to load ONNX detector {model_path}: {e}")
+
+    # 2. Ultralytics (development fallback: pretrained or fine-tuned .pt)
     try:
         from ultralytics import YOLO
-        _model = YOLO("yolov8n.pt")  # Downloads pretrained if not cached
-        logger.info("Loaded YOLOv8n pretrained model")
-        return _model
+
+        _ultra_model = YOLO("yolov8n.pt")
+        logger.info("Loaded Ultralytics YOLOv8n (no fine-tuned ONNX found)")
+        return _ultra_model
     except Exception as e:
         logger.warning(f"Failed to load Ultralytics YOLO: {e}")
 
@@ -277,17 +311,98 @@ def _detect_by_contours(image: np.ndarray, target: str = "package") -> list[BBox
 # YOLO-based detection
 # ---------------------------------------------------------------------------
 
-def _detect_by_yolo(image: np.ndarray, model, target: str = "package") -> list[BBox]:
-    """Detect using YOLOv8 model.
+def _letterbox(image: np.ndarray, size: int) -> tuple[np.ndarray, float, tuple[int, int]]:
+    """Resize with preserved aspect ratio, padding to a square input.
+
+    Returns (letterboxed image, scale factor, (pad_x, pad_y)) so outputs can
+    be mapped back to original image coordinates.
+    """
+    h, w = image.shape[:2]
+    scale = min(size / w, size / h)
+    new_w, new_h = int(round(w * scale)), int(round(h * scale))
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    pad_x, pad_y = (size - new_w) // 2, (size - new_h) // 2
+    canvas = np.full((size, size, 3), 114, dtype=np.uint8)
+    canvas[pad_y:pad_y + new_h, pad_x:pad_x + new_w] = resized
+    return canvas, scale, (pad_x, pad_y)
+
+
+def _detect_by_onnx(image: np.ndarray, session, target: str = "package") -> list[BBox]:
+    """Detect using the fine-tuned ONNX detector via onnxruntime.
+
+    Replicates the Ultralytics detection post-processing: letterbox
+    preprocessing, (1, 4+nc, N) output decoding, confidence filtering,
+    and class-aware NMS.
 
     Args:
         image: BGR image as numpy array.
-        model: Loaded YOLO model.
+        session: Loaded onnxruntime InferenceSession.
         target: "package" or "label".
 
     Returns:
         List of detected bounding boxes with confidence ≥ threshold.
     """
+    height, width = image.shape[:2]
+    size = _onnx_imgsz
+
+    letterboxed, scale, (pad_x, pad_y) = _letterbox(image, size)
+    blob = letterboxed[:, :, ::-1].transpose(2, 0, 1).astype(np.float32) / 255.0
+    blob = np.ascontiguousarray(blob[None])  # (1, 3, size, size)
+
+    input_name = session.get_inputs()[0].name
+    outputs = session.run(None, {input_name: blob})
+    preds = np.asarray(outputs[0])
+    if preds.ndim == 3:
+        preds = preds[0]
+    if preds.shape[0] < preds.shape[1]:  # (4+nc, N) -> (N, 4+nc)
+        preds = preds.T
+
+    boxes_xywh = preds[:, :4]
+    scores_all = preds[:, 4:]
+    class_ids = scores_all.argmax(axis=1)
+    confidences = scores_all.max(axis=1)
+
+    names = _onnx_names or {0: "package", 1: "label"}
+    wanted = {cid for cid, name in names.items() if name == target}
+
+    # Pre-filter by confidence and target class before NMS
+    candidates: list[BBox] = []
+    for i in np.where(confidences >= CONFIDENCE_THRESHOLD)[0]:
+        if wanted and int(class_ids[i]) not in wanted:
+            continue
+        cx, cy, bw, bh = boxes_xywh[i]
+        # Map letterbox coordinates back to original image coordinates
+        x1 = (cx - bw / 2 - pad_x) / scale
+        y1 = (cy - bh / 2 - pad_y) / scale
+        x2 = (cx + bw / 2 - pad_x) / scale
+        y2 = (cy + bh / 2 - pad_y) / scale
+        x1 = max(0, min(int(x1), width - 1))
+        y1 = max(0, min(int(y1), height - 1))
+        x2 = max(x1 + 1, min(int(x2), width))
+        y2 = max(y1 + 1, min(int(y2), height))
+        candidates.append(BBox(
+            x1=x1, y1=y1, x2=x2, y2=y2,
+            confidence=round(float(confidences[i]), 3),
+            class_name=target,
+        ))
+
+    return _non_max_suppression(candidates)
+
+
+def _detect_by_yolo(image: np.ndarray, model, target: str = "package") -> list[BBox]:
+    """Detect using the YOLO model (onnxruntime session or Ultralytics YOLO).
+
+    Args:
+        image: BGR image as numpy array.
+        model: Loaded model (onnxruntime InferenceSession or Ultralytics YOLO).
+        target: "package" or "label".
+
+    Returns:
+        List of detected bounding boxes with confidence ≥ threshold.
+    """
+    if hasattr(model, "run"):  # onnxruntime InferenceSession
+        return _detect_by_onnx(image, model, target)
+
     height, width = image.shape[:2]
 
     # Run inference at reduced resolution — imgsz=320 keeps CPU latency
@@ -301,9 +416,16 @@ def _detect_by_yolo(image: np.ndarray, model, target: str = "package") -> list[B
         if boxes is None:
             continue
 
+        names = getattr(result, "names", None) or {}
         for box in boxes:
             conf = float(box.conf[0])
             if conf < CONFIDENCE_THRESHOLD:
+                continue
+
+            # Filter to the target class when the model knows our classes
+            cls_id = int(box.cls[0]) if box.cls is not None and len(box.cls) else -1
+            class_name = names.get(cls_id, "")
+            if class_name and class_name != target:
                 continue
 
             # Get bounding box coordinates
@@ -358,9 +480,14 @@ def detect_package(image_bytes: bytes) -> DetectionResult:
 
     height, width = image.shape[:2]
 
-    # Try YOLO model first
+    # Try the fine-tuned detector first
     model = _load_yolo_model()
-    model_used = "yolo_v8n" if model is not None else "contour_fallback"
+    if model is None:
+        model_used = "contour_fallback"
+    elif _onnx_session is not None:
+        model_used = "yolo_v8n_finetuned"
+    else:
+        model_used = "yolo_v8n"
 
     if model is not None:
         bboxes = _detect_by_yolo(image, model, target="package")
@@ -432,26 +559,30 @@ def detect_label(
     height, width = image.shape[:2]
     model_used = "contour_fallback"
 
-    # If package bbox provided, crop to that region
-    if package_bbox is not None:
-        crop = image[package_bbox.y1:package_bbox.y2, package_bbox.x1:package_bbox.x2]
-        crop_height, crop_width = crop.shape[:2]
-    else:
-        crop = image
-        crop_height, crop_width = height, width
+    if package_bbox is None:
         package_bbox = BBox(x1=0, y1=0, x2=width, y2=height, confidence=1.0)
 
-    # Try YOLO model
+    # Try the fine-tuned detector. The model is trained on full package
+    # photos, so inference runs on the complete frame — a tight package crop
+    # starves it of context and suppresses detections. Results are then
+    # clipped to the package region when one is provided.
     model = _load_yolo_model()
     if model is not None:
-        model_used = "yolo_v8n"
-        bboxes = _detect_by_yolo(crop, model, target="label")
-        # Offset bboxes to original image coordinates
+        model_used = "yolo_v8n_finetuned" if _onnx_session is not None else "yolo_v8n"
+        bboxes = _detect_by_yolo(image, model, target="label")
+        clipped: list[BBox] = []
         for b in bboxes:
-            b.x1 += package_bbox.x1
-            b.y1 += package_bbox.y1
-            b.x2 += package_bbox.x1
-            b.y2 += package_bbox.y1
+            x1 = max(b.x1, package_bbox.x1)
+            y1 = max(b.y1, package_bbox.y1)
+            x2 = min(b.x2, package_bbox.x2)
+            y2 = min(b.y2, package_bbox.y2)
+            if x2 > x1 and y2 > y1:
+                clipped.append(BBox(
+                    x1=x1, y1=y1, x2=x2, y2=y2,
+                    confidence=b.confidence,
+                    class_name="label",
+                ))
+        bboxes = clipped
     else:
         # Fallback: use full package region as label (MVP per FR-005)
         bboxes = [BBox(

@@ -1,13 +1,13 @@
 # Docket Legal Metrology Compliance System — Progress Log
 
-**Last Updated (UTC):** 2026-09-09 09:15
+**Last Updated (UTC):** 2026-09-09 17:00
 **Current Phase:** COMPLETE — All 9 Phases Done
-**Current Subphase:** Post-completion maintenance (ops hardening)
-**Current Task:** Full stack rebuilt and verified live (/health 200, MinIO buckets, RQ worker); 541/541 backend tests passing; RBAC 401 semantics, FR-004/FR-005 CV fallback, and extraction type mismatch fixed
+**Current Subphase:** Post-completion maintenance (ML hardening)
+**Current Task:** Mock YOLO pipeline replaced with a real fine-tuned package/label detector (YOLOv8n, mAP50 0.995, ONNX @ ml/models/package_label_detector.onnx); 546/546 backend tests passing; live stack verified with yolo_v8n_finetuned @ 0.97 confidence
 
 ---
 
-## Full Test Suite Results (2026-09-06 00:55 UTC)
+## Full Test Suite Results (2026-09-09 17:00 UTC)
 
 | Test File | Tests | Status |
 |---|---|---|
@@ -15,7 +15,7 @@
 | test_rbac.py | 25 | ✅ PASS |
 | test_audit.py | 42 | ✅ PASS |
 | test_image_processing.py | 26 | ✅ PASS |
-| test_cv_detection.py | 40 | ✅ PASS |
+| test_cv_detection.py | 46 | ✅ PASS |
 | test_ocr_service.py | 35 | ✅ PASS |
 | test_storage.py | 32 | ✅ PASS |
 | test_classification.py | 33 | ✅ PASS |
@@ -26,7 +26,7 @@
 | test_review.py | 26 | ✅ PASS |
 | test_dashboard.py | 17 | ✅ PASS |
 | test_report_generator.py | 10 | ✅ PASS |
-| **Backend Total** | **541** | **✅ ALL PASSING** |
+| **Backend Total** | **546** | **✅ ALL PASSING** |
 | frontend (tsc) | — | ✅ 0 errors |
 | frontend (vitest) | 58 | ✅ 58/58 PASSING |
 | **Combined Total** | **598** | **✅ ALL PASSING** |
@@ -92,6 +92,7 @@
 | 2026-09-09 09:15 | Fix | RBAC: HTTPBearer(auto_error=False) + explicit 401 — missing credentials now return 401 per prd.md §25.2 (default FastAPI behavior returned 403); CV: FR-004 full-image fallback with manual_crop_used now applies whenever no package is detected (incl. with a loaded real YOLO), FR-005 label fallback likewise; Extraction: extract_declarations accepts ocr_service.OCRResult (.text) alongside internal tokens (.original) | backend/app/core/rbac.py, backend/app/services/cv_detection.py, backend/app/services/extraction.py | VERIFIED | 12 RBAC/audit 401 failures + 2 CV/OCR integration failures + 1 extraction AttributeError resolved; suite 541/541 | None | AI Agent |
 | 2026-09-09 12:50 | Live E2E Demo Fix | Live end-to-end demo hardening: audit_service.log_action serializes dict payloads to JSON strings for jsonb columns (asyncpg DataError); image upload made idempotent via content-hash dedup returning existing record per FR-001; rule engine get_applicable_rules/evaluate_all_rules converted to async (awaitable DB calls) with "ALL" wildcard + parent-category matching for applies_when and required_field fallback for validation target; evidence_engine selects latest image per inspection (MultipleResultsFound fix); pipeline runs blocking MinIO upload via asyncio.to_thread; persist_violations unwraps ORM ComplianceCheck ids; report generator falls back to inline 12-section HTML when report.html template absent; storage.upload_report supports arbitrary filename (JSON export); pydyf pinned 0.10.0 (WeasyPrint 62.3 incompatibility with pydyf>=0.11); YOLO inference at imgsz=320 (63ms CPU, <300ms target per prd.md §10.2); pytest.ini added (asyncio_mode=auto), rule-engine test mocks converted to AsyncSession-compatible awaits | backend/app/services/audit_service.py, backend/app/api/inspections.py, backend/app/services/rule_engine.py, backend/app/services/evidence_engine.py, backend/app/tasks/pipeline.py, backend/app/services/compliance_engine.py, backend/app/services/report_generator.py, backend/app/services/storage.py, backend/app/services/cv_detection.py, backend/app/schemas/inspection.py, backend/requirements.txt, backend/pytest.ini, backend/tests/test_rule_engine.py | VERIFIED | 541/541 PASS; live demo verified: login 200 → POST /inspections 201 → image upload 201 (dedup returns same id) → full pipeline (quality 1.0 → OCR 3 blocks → 14 declarations → 5 rules evaluated → PARTIALLY_COMPLIANT, 2 violations persisted, inspection flagged) → PDF report 20.5KB %PDF-1.7 stored in lm-reports (1.19s < 10s per prd.md §9) | YOLO first-load warmup ~6s (acceptable at startup) | AI Agent |
 | 2026-09-09 13:10 | Perf hardening | NFR perf tests stabilized: GradientBoosting retuned 100/5 → 60 estimators/depth 3/lr 0.15 (retrain ≈8s → ≈3s median, equal holdout accuracy on 80/20 split); classification retrain test and CV latency/multi-detection tests use warm-up + median-of-3 timing so one-time model load and transient host load don't cause flakes | backend/app/services/classification.py, backend/tests/test_classification.py, backend/tests/test_cv_detection.py | VERIFIED | retrain median ≈3.2s (<10s target per prd.md §10.2); all 7 perf tests pass at host load ~1.0; suite 541/541 | None | AI Agent |
+| 2026-09-09 17:00 | ML hardening (Task 3.1.1) | Mock YOLO pipeline replaced with a real fine-tuned package/label detector: synthetic labeled dataset generator (260 train/60 val package photos with PDP labels, YOLO format, realistic augmentation) + training script (fine-tune yolov8n @ 416px, legacy TorchScript ONNX export + onnxslim + class metadata — no onnxscript/numpy-2.x churn); cv_detection.py loads the fine-tuned ONNX via onnxruntime with letterbox preprocessing, (1,4+nc,N) decoding, class-aware NMS, and FR-004/FR-005 fallbacks intact; detect_label runs inference on the full frame (training domain) and clips to the package region (tight crops starve the model of context); export deps pinned (onnx<1.23, onnxslim); model installed at backend/ml/models/package_label_detector.onnx (10.3 MB) | backend/ml/training/{generate_dataset.py,train_detector.py,README.md}, backend/ml/models/package_label_detector.onnx, backend/app/services/cv_detection.py, backend/tests/test_cv_detection.py, backend/requirements.txt, .gitignore | VERIFIED | Val: mAP50 0.995, P 0.999, R 1.000 (acceptance ≥0.85); steady-state detection ≈85ms CPU (<300ms per prd.md §10.2); live stack: yolo_v8n_finetuned @ 0.971 conf, manual_crop_used=False; suite 546/546 (+5 real-detector tests) | Training artifacts gitignored (**/ml/data/, **/runs/); retraining guide in ml/training/README.md | AI Agent |
 
 ---
 

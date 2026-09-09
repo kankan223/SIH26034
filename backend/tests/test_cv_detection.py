@@ -209,9 +209,11 @@ class TestPackageDetection:
         """Package image should produce at least one detection."""
         image_bytes = _make_package_image()
         result = detect_package(image_bytes)
-        # Dev image may use dummy ONNX stub (returns 0 boxes) OR contour fallback.
+        # Dev image may use contour fallback OR the fine-tuned YOLO detector.
         # Either way the call must not crash and must return a valid result.
-        assert result.detected is True or result.model_used in ("yolo_v8n", "contour_fallback", "none")
+        assert result.detected is True or result.model_used in (
+            "yolo_v8n_finetuned", "yolo_v8n", "contour_fallback", "none"
+        )
 
     def test_detect_package_bbox_valid_coordinates(self):
         """All bbox coordinates should be within image bounds."""
@@ -265,14 +267,16 @@ class TestPackageDetection:
         image_bytes = _make_package_image()
         result = detect_package(image_bytes)
         assert isinstance(result.manual_crop_used, bool)
-        # dummy ONNX stub returns 0 boxes -> manual_crop_used may be True
-        # contour fallback returns full image -> manual_crop_used may be True too
+        # contour fallback / full-image FR-004 fallback -> may be True;
+        # fine-tuned detector finding the package -> False
 
     def test_detect_package_model_used(self):
         """Result should indicate which model was used."""
         image_bytes = _make_package_image()
         result = detect_package(image_bytes)
-        assert result.model_used in ("yolo_v8n", "contour_fallback", "none")
+        assert result.model_used in (
+            "yolo_v8n_finetuned", "yolo_v8n", "contour_fallback", "none"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -294,22 +298,24 @@ class TestLabelDetection:
         image_bytes = _make_package_image()
         package_bbox = BBox(x1=100, y1=80, x2=500, y2=400, confidence=0.9)
         result = detect_label(image_bytes, package_bbox=package_bbox)
-        # Dev image may use dummy ONNX stub that returns 0 boxes; fallback then
-        # returns the full package region as the label.
-        assert result.detected is True or result.model_used in ("yolo_v8n", "contour_fallback")
+        # Dev image may use contour fallback; fallback then returns the full
+        # package region as the label.
+        assert result.detected is True or result.model_used in (
+            "yolo_v8n_finetuned", "yolo_v8n", "contour_fallback"
+        )
 
     def test_detect_label_without_package_bbox(self):
         """Should detect label in full image when no package bbox given.
 
-        In the dev image we don't bundle a real YOLOv8 ONNX model, so the
-        callable ONNX stub returns zero boxes; _detect_by_yolo() then yields
-        nothing and detect_label() falls back to the full-package label region.
+        With the fine-tuned ONNX detector installed, real label boxes are
+        returned; otherwise _detect_by_yolo() yields nothing and
+        detect_label() falls back to the full-package label region.
         """
         image_bytes = _make_package_image()
         result = detect_label(image_bytes)
         # Either YOLO produced label boxes, or fallback produced the full region.
         assert result.detected is True or result.model_used in (
-            "yolo_v8n", "contour_fallback"
+            "yolo_v8n_finetuned", "yolo_v8n", "contour_fallback"
         )
         # If we got here without raising, the pipeline didn't crash.
 
@@ -318,8 +324,10 @@ class TestLabelDetection:
         image_bytes = _make_package_image()
         package_bbox = BBox(x1=100, y1=80, x2=500, y2=400, confidence=0.9)
         result = detect_label(image_bytes, package_bbox=package_bbox)
-        # Dev image may use dummy ONNX stub; fallback gives full region.
-        assert result.detected is True or result.model_used in ("yolo_v8n", "contour_fallback")
+        # Dev image may use contour fallback; fallback gives full region.
+        assert result.detected is True or result.model_used in (
+            "yolo_v8n_finetuned", "yolo_v8n", "contour_fallback"
+        )
         for bbox in result.bboxes:
             assert bbox.x1 >= package_bbox.x1
             assert bbox.y1 >= package_bbox.y1
@@ -338,7 +346,7 @@ class TestLabelDetection:
         """Even without a real model, detect_label should return a region via fallback."""
         image_bytes = _make_package_image()
         result = detect_label(image_bytes)
-        # model_used may be yolo_v8n (dummy stub) — either way we should not crash
+        # model_used may be yolo_v8n_finetuned (real model) — either way no crash
         assert isinstance(result, DetectionResult)
         assert result.image_width > 0 and result.image_height > 0
 
@@ -504,3 +512,123 @@ class TestIntegration:
             assert isinstance(d, dict)
             assert "x1" in d
             assert "confidence" in d
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# SECTION 10: FINE-TUNED DETECTOR (ml/models/package_label_detector.onnx)
+# ═════════════════════════════════════════════════════════════════════════
+
+
+def _make_label_photo(
+    width: int = 640, height: int = 480,
+) -> tuple[bytes, tuple[int, int, int, int], tuple[int, int, int, int]]:
+    """Render an in-domain package photo resembling the training distribution.
+
+    Returns (jpeg_bytes, package_gt_xyxy, label_gt_xyxy).
+    """
+    rng = np.random.default_rng(7)
+    img = np.full((height, width, 3), 148, dtype=np.uint8)
+    img = cv2.add(img, rng.integers(-10, 11, img.shape, dtype=np.int16).astype(np.uint8))
+
+    # Package body (shaded, box-like)
+    x1, y1, x2, y2 = 90, 70, 430, 380
+    pkg_color = (70, 110, 160)
+    for i, yy in enumerate(range(y1, y2)):
+        t = (yy - y1) / max(y2 - y1 - 1, 1)
+        shade = tuple(int(c * (0.78 + 0.4 * t)) for c in pkg_color)
+        cv2.line(img, (x1, yy), (x2 + int(6 * t), yy), shade, 1)
+    cv2.rectangle(img, (x1, y1), (x2, y2), (20, 20, 20), 2)
+
+    # Printed label (principal display panel) with declarations
+    lx1, ly1, lx2, ly2 = x1 + 28, y1 + 34, x2 - 28, y2 - 58
+    cv2.rectangle(img, (lx1, ly1), (lx2, ly2), (247, 246, 240), -1)
+    cv2.rectangle(img, (lx1, ly1), (lx2, ly2), (35, 35, 35), 2)
+    cv2.putText(img, "DOCKET FOODS", (lx1 + 10, ly1 + 28),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 1)
+    cv2.putText(img, "REAL JUICE", (lx1 + 10, ly1 + 66),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (15, 15, 15), 2)
+    cv2.putText(img, "Net Qty. 500 ml", (lx1 + 10, ly1 + 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (50, 50, 50), 1)
+    cv2.putText(img, "MRP Rs. 120.00", (lx1 + 10, ly1 + 126),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (50, 50, 50), 1)
+    cv2.putText(img, "Mfg: Zenith Foods Pvt Ltd", (lx1 + 10, ly1 + 150),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.38, (70, 70, 70), 1)
+
+    _, buffer = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 88])
+    return buffer.tobytes(), (x1, y1, x2, y2), (lx1, ly1, lx2, ly2)
+
+
+def _finetuned_model_installed() -> bool:
+    from app.services import cv_detection as cvd
+
+    return any(p.is_file() for p in cvd._candidate_model_paths())
+
+
+@pytest.mark.skipif(
+    not _finetuned_model_installed(),
+    reason="fine-tuned ONNX detector not installed (ml/models/package_label_detector.onnx)",
+)
+class TestFinetunedDetector:
+    """Real-model tests against the fine-tuned package/label detector.
+
+    These replace the mock/dummy-ONNX behavior: the installed model is a
+    YOLOv8n fine-tuned on labeled package photos (see ml/training/) with
+    classes {0: package, 1: label}.
+    """
+
+    def test_model_file_installed(self):
+        """A real ONNX detector must exist and be a full-size model file."""
+        from app.services import cv_detection as cvd
+
+        paths = [p for p in cvd._candidate_model_paths() if p.is_file()]
+        assert paths, "no ONNX detector found in candidate paths"
+        assert paths[0].stat().st_size > 1_000_000, "model file suspiciously small"
+
+    def test_model_classes_are_package_and_label(self):
+        """The detector must expose the fine-tuned class set, not COCO."""
+        from app.services import cv_detection as cvd
+
+        cvd._load_yolo_model()
+        assert cvd._onnx_names == {0: "package", 1: "label"}
+
+    def test_finetuned_detector_finds_package(self):
+        """Package is detected with real confidence and accurate geometry."""
+        image_bytes, gt_pkg, _ = _make_label_photo()
+        result = detect_package(image_bytes)
+
+        assert result.model_used == "yolo_v8n_finetuned"
+        assert result.detected, "fine-tuned detector found no package"
+        assert result.manual_crop_used is False
+
+        best = result.primary_bbox
+        assert best.confidence >= CONFIDENCE_THRESHOLD
+        assert best.class_name == "package"
+
+        gt_box = BBox(x1=gt_pkg[0], y1=gt_pkg[1], x2=gt_pkg[2], y2=gt_pkg[3], confidence=1.0)
+        iou = _compute_iou(best, gt_box)
+        assert iou >= 0.60, f"package IoU {iou:.2f} below 0.60 (box={best.to_dict()})"
+
+    def test_finetuned_detector_finds_label(self):
+        """Label region is detected within the package and geometrically accurate."""
+        image_bytes, gt_pkg, gt_label = _make_label_photo()
+        pkg = detect_package(image_bytes).primary_bbox
+        result = detect_label(image_bytes, package_bbox=pkg)
+
+        assert result.model_used == "yolo_v8n_finetuned"
+        assert result.detected, "fine-tuned detector found no label"
+
+        best = result.primary_bbox
+        assert best.confidence >= CONFIDENCE_THRESHOLD
+        assert best.class_name == "label"
+        assert best.x1 >= pkg.x1 - 2 and best.y1 >= pkg.y1 - 2
+
+        gt_box = BBox(x1=gt_label[0], y1=gt_label[1], x2=gt_label[2], y2=gt_label[3], confidence=1.0)
+        iou = _compute_iou(best, gt_box)
+        assert iou >= 0.50, f"label IoU {iou:.2f} below 0.50 (box={best.to_dict()})"
+
+    def test_background_image_still_flags_manual_crop(self):
+        """Out-of-domain (no package) input must trigger the FR-004 fallback."""
+        image_bytes = _make_empty_image()
+        result = detect_package(image_bytes)
+        assert result.manual_crop_used is True
+        assert result.primary_bbox.confidence == 0.3  # full-image fallback marker
