@@ -519,10 +519,16 @@ class TestIntegration:
         assert "mrp" in result.found_fields
         assert "net_quantity" in result.found_fields
 
-    def test_integration_with_cv_detection(self):
-        """Full pipeline: detect → OCR → extract."""
-        from app.services.cv_detection import detect_package, crop_image
-        from app.services.ocr_service import extract_text_simple
+    def test_integration_with_cv_detection(self, cv_detection, ocr_service_module):
+        """Full pipeline: detect → OCR → extract.
+
+        cv_detection + ocr_service_module fixtures ensure the heavy
+        imports (cv2, onnxruntime, PaddleOCR) are paid once per session,
+        not once per test.
+        """
+        detect_package = cv_detection.detect_package
+        crop_image = cv_detection.crop_image
+        extract_text_simple = ocr_service_module.extract_text_simple
 
         # Create a test image
         import numpy as np

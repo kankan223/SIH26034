@@ -364,17 +364,22 @@ class TestErrorHandling:
 
 
 class TestPerformance:
-    """All OCR must complete within latency targets."""
+    """All OCR must complete within latency targets.
 
-    def test_extraction_under_3s(self):
+    PaddleOCR import + model init is ~6s cold and is paid by every OCR
+    test. The ocr_service_module fixture (session-scoped) ensures the
+    engine is initialised once for the whole suite.
+    """
+
+    def test_extraction_under_3s(self, ocr_service_module):
         """OCR should complete in <3s per prd.md §10.2."""
         image_bytes = _make_text_image("MRP 999 Net Quantity 500g", 800, 200)
         start = time.time()
-        response = extract_text(image_bytes)
+        response = ocr_service_module.extract_text(image_bytes)
         elapsed_ms = (time.time() - start) * 1000
         assert elapsed_ms < 3000, f"OCR took {elapsed_ms:.0f}ms (target: <3000ms)"
 
-    def test_multiple_extractions_under_5s(self):
+    def test_multiple_extractions_under_5s(self, ocr_service_module):
         """5 sequential extractions should complete in <5s."""
         images = [_make_text_image(f"Text {i}") for i in range(5)]
         start = time.time()

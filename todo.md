@@ -2869,11 +2869,12 @@ git push origin main --tags
 - [x] Add session-scoped pytest fixture in backend/tests/conftest.py: trained_classifier trains the GradientBoosting model once per session (was being re-trained by 4+ tests independently)
 - [x] Rewrite TestModelArtifact to consume the fixture and inspect the saved pipeline via joblib.load without re-training
 - [x] Rewrite TestPerformance.test_classification_under_50ms to measure inference only (fixture handles warmup); keep <50ms assertion
-- [x] Keep test_retrain_under_10s as the single legit retrain perf gate; use fixture for warm-up instead of an extra retrain_model() call
-- [x] Full suite re-verified: 546/546 PASS in 35.3s (was 63.5s, ~44% faster); zero regressions
+- [x] Keep test_retrain_under_10s as the single legit retrain perf gate; use fixture for warm-up instead of an extra retrain_model() call  - [x] Full suite re-verified: 546/546 PASS in 35.3s (was 63.5s, ~44% faster); zero regressions
 - [x] Frontend unchanged: 54/54 Vitest, 0 tsc errors, build OK
+- [x] 2026-09-10: Added session-scoped OCR/CV fixtures (ocr_service_module, ocr_engine, cv_detection_module, cv_detection) so PaddleOCR init and cv_detection import+model-warm are paid once per suite; OCR perf tests reuse pre-initialized engine; fixed trained_classifier fixture name (_load_ocr, not _get_ocr_engine); restored cv2 import for OCR test helpers; 546/546 in 37.3s, 54/54 frontend
 
 ---
 
 ## END OF PHASE DEFINITIONS
+
 
