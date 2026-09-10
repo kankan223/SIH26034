@@ -215,29 +215,29 @@ class TestEdgeCases:
 
 
 class TestModelArtifact:
-    """Verify model save/load functionality."""
+    """Verify model save/load functionality.
 
-    def test_model_directory_exists(self):
+    Uses the session-scoped trained_classifier fixture so the model
+    is trained once for the whole suite, not once per test.
+    """
+
+    def test_model_directory_exists(self, trained_classifier):
         """Model directory should exist after training."""
-        retrain_model()  # Ensure model is trained
         assert os.path.exists(MODEL_DIR)
 
-    def test_model_file_exists(self):
+    def test_model_file_exists(self, trained_classifier):
         """Model file should exist after training."""
-        retrain_model()
         assert os.path.exists(MODEL_PATH)
 
-    def test_model_file_is_joblib(self):
+    def test_model_file_is_joblib(self, trained_classifier):
         """Model file should be a valid joblib file."""
-        retrain_model()
         import joblib
         model = joblib.load(MODEL_PATH)
         assert hasattr(model, "predict")
         assert hasattr(model, "predict_proba")
 
-    def test_model_load_and_predict(self):
+    def test_model_load_and_predict(self, trained_classifier):
         """Loaded model should be able to predict."""
-        retrain_model()
         import joblib
         model = joblib.load(MODEL_PATH)
         prediction = model.predict(["Britannia Biscuits"])[0]
@@ -252,16 +252,18 @@ class TestModelArtifact:
 class TestPerformance:
     """Classification should complete in <50ms per prd.md §10.2."""
 
-    def test_classification_under_50ms(self):
-        """Single classification should complete in <50ms."""
-        retrain_model()  # Ensure model is ready
+    def test_classification_under_50ms(self, trained_classifier):
+        """Single classification should complete in <50ms.
+
+        trained_classifier fixture ensures the model is loaded before
+        we start the clock, so we measure inference only.
+        """
         start = time.time()
         classify_product("Britannia Good Day Biscuits")
         elapsed_ms = (time.time() - start) * 1000
-        # Allow some margin for first call (model loading)
-        assert elapsed_ms < 200, f"Took {elapsed_ms:.0f}ms (target: <50ms after warmup)"
+        assert elapsed_ms < 50, f"Took {elapsed_ms:.0f}ms (target: <50ms)"
 
-    def test_multiple_classifications_under_500ms(self):
+    def test_multiple_classifications_under_500ms(self, trained_classifier):
         """20 classifications should complete in <500ms."""
         products = [
             "Britannia Biscuits", "Coca-Cola Drink", "Colgate Toothpaste",
@@ -278,13 +280,12 @@ class TestPerformance:
         elapsed = time.time() - start
         assert elapsed < 0.5, f"20 classifications took {elapsed:.2f}s (target: <0.5s)"
 
-    def test_retrain_under_10s(self):
+    def test_retrain_under_10s(self, trained_classifier):
         """Model retraining should complete in <10s (median of 3 runs).
 
-        Median-of-3 keeps the assertion robust against transient host
-        load; the retrain itself is deterministic (random_state=42).
+        trained_classifier is the warm-up (imports, BLAS init, joblib
+        write cache); we then measure 3 deterministic retrain runs.
         """
-        retrain_model()  # warm-up: imports, BLAS init, joblib write cache
         samples = []
         for _ in range(3):
             start = time.time()

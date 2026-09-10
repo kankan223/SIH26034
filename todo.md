@@ -2863,9 +2863,17 @@ git push origin main --tags
   - NEW2 (noisy low-conf self-training, all 61): mAP50 0.741, mAP(50-95) 0.474
   - NEW3 (strict-pool self-training, 23 images): mAP50 0.789, mAP(50-95) 0.511, P 0.679, R 0.770
 - [x] DECISION: keep the synthetic-only model as the installed runtime (highest real mAP50 + best box quality); self-training on auto-labels hurt box quality (mAP50-95 dropped 0.662→0.511), so future real-photo retraining must use higher-quality annotations (manual contact-sheet review / better per-image labels) before retraining
-- [x] Train3 checkpoint exported + enriched-metadata installed to /app/tmp_new3_onnx.onnx (for retraining-guide reference); production ONNX stays at ml/models/package_label_detector.onnx (OLD model)
-- [x] README updated in ml/training/README.md: full real-photo pipeline documented (fetch → annotate → combine → train → eval_real.py comparison); credits-not-committed note included
+- [x] Train3 checkpoint exported + enriched-metadata installed to /app/tmp_new3_onnx.onnx (for retraining-guide reference); production ONNX stays at ml/models/package_label_detector.onnx (OLD model)  - [x] README updated in ml/training/README.md: full real-photo pipeline documented (fetch → annotate → combine → train → eval_real.py comparison); credits-not-committed note included
+
+### 2026-09-09 Session — Backend test-suite performance optimization
+- [x] Add session-scoped pytest fixture in backend/tests/conftest.py: trained_classifier trains the GradientBoosting model once per session (was being re-trained by 4+ tests independently)
+- [x] Rewrite TestModelArtifact to consume the fixture and inspect the saved pipeline via joblib.load without re-training
+- [x] Rewrite TestPerformance.test_classification_under_50ms to measure inference only (fixture handles warmup); keep <50ms assertion
+- [x] Keep test_retrain_under_10s as the single legit retrain perf gate; use fixture for warm-up instead of an extra retrain_model() call
+- [x] Full suite re-verified: 546/546 PASS in 35.3s (was 63.5s, ~44% faster); zero regressions
+- [x] Frontend unchanged: 54/54 Vitest, 0 tsc errors, build OK
 
 ---
 
 ## END OF PHASE DEFINITIONS
+
